@@ -1,4 +1,7 @@
 fastapi
 uvicorn
 scikit-learn
+scipy
+numpy
 rapidfuzz
+anthropic

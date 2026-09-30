@@ -7,8 +7,8 @@ It never issues rulings and does not generate references from a language model.
 
 | Use | Text | Origin | Mirror used | License |
 |---|---|---|---|---|
-| Matching | Quran Simple (Tanzil) | tanzil.net | github.com/fawazahmed0/quran-api (`ara-quransimple`) | Tanzil terms: verbatim copies allowed with attribution, text must not be changed |
-| Display | Uthmani, Hafs (King Fahd Glorious Quran Printing Complex) | qurancomplex.gov.sa | github.com/fawazahmed0/quran-api (`ara-quranuthmanihaf`) | Free for non-commercial use with attribution |
+| Matching and display | Quran Simple, with diacritics (Tanzil) | tanzil.net | github.com/fawazahmed0/quran-api (`ara-quransimple`) | Tanzil terms: verbatim copies allowed with attribution, text must not be changed |
+| Surah names | Standard Arabic names | (written in `backend/surahs.py`, checked against the dataset order) | | |
 | English meaning | Saheeh International (Umm Muhammad) | tanzil.net | github.com/fawazahmed0/quran-api (`eng-ummmuhammad`) | Tanzil terms |
 
 ## Hadith
@@ -29,12 +29,18 @@ gradings are shown rather than picking one.
   text is fabricated; many texts exist in other books (e.g. Musnad Ahmad, al-Bayhaqi).
   The interface states this and refers the user to scholars.
 - Gradings come from the dataset and have not been independently reviewed.
+- Reference links go to Quran.com and Sunnah.com. For Bukhari, Abu Dawud, Tirmidhi, Nasa'i,
+  Ibn Majah and Nawawi the numbering was spot-checked against Sunnah.com; Muslim and Malik use a
+  different numbering there, so those link to a Sunnah.com search instead.
 
 ## Software
 
 | Tool | Use | License |
 |---|---|---|
 | Python, FastAPI, Uvicorn | Backend | PSF, MIT, BSD |
+| NumPy, SciPy, SQLite | Index storage | BSD, public domain |
+| React, Vite | Web interface | MIT |
+| Amiri, Readex Pro (Google Fonts) | Typefaces | SIL Open Font License |
 | scikit-learn | Character n-gram search index | BSD-3 |
 | RapidFuzz | Fuzzy alignment of quotes to sources | MIT |
 | Claude API (Anthropic) | Extracting quotes from messages, explaining results | Commercial API |

@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "تبيّن | Tabayyan",
+  "version": "1.0.0",
+  "description": "حدّد آية أو حديثًا في أي صفحة وتحقق منه في المصادر الموثقة دون مغادرة الصفحة.",
+  "default_locale": "ar",
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "48": "icons/48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "contextMenus",
+    "scripting",
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://*.onrender.com/*"
+  ],
+  "options_page": "options.html"
+}
