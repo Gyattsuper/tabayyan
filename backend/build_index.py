@@ -1,23 +1,33 @@
 """Build one searchable corpus from the Quran and hadith datasets.
 
 Sources (see SOURCES.md):
-  - Quran: Tanzil "quran-simple" text for matching, King Fahd Complex
-    Uthmani (Hafs) text for display. Mirrored in fawazahmed0/quran-api.
+  - Quran: Tanzil "quran-simple" text (with diacritics) for matching and
+    display, so highlighted words line up exactly. Mirrored in
+    fawazahmed0/quran-api.
   - Hadith: fawazahmed0/hadith-api (sunnah.com data), Arabic + English,
     with gradings by named scholars.
 
 Run once:  python build_index.py
-Output:    data/corpus.json
+Output:    data/corpus.db      texts, references, gradings (SQLite)
+           data/tfidf.npz      search index (float32 sparse matrix)
+           data/vectorizer.pkl, data/types.npy
 """
 import json
+import pickle
+import sqlite3
 from pathlib import Path
 
+import numpy as np
+from scipy import sparse
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 from arabic import normalize
+from surahs import SURAH
 
 ROOT = Path(__file__).resolve().parent.parent
 Q = ROOT / "data" / "quran-api"
 H = ROOT / "data" / "hadith-api"
-OUT = ROOT / "data" / "corpus.json"
+DATA = ROOT / "data"
 
 BOOKS = {
     "bukhari": "صحيح البخاري",
@@ -65,24 +75,23 @@ def build():
     records = []
 
     info = load(Q / "info.min.json")
-    surah_name = {c["chapter"]: c["arabicname"] for c in info["chapters"]}
+    surah_name = SURAH  # standard names; the dataset's have inconsistent diacritics and hamzas
     simple = load(Q / "editions" / "ara-quransimple.min.json")["quran"]
-    uthmani = load(Q / "editions" / "ara-quranuthmanihaf.min.json")["quran"]
     english = load(Q / "editions" / "eng-ummmuhammad.min.json")["quran"]
-    for s, u, e in zip(simple, uthmani, english):
+    for s, e in zip(simple, english):
         records.append({
             "type": "quran",
             "ref": f"{surah_name[s['chapter']]}، آية {s['verse']}",
             "surah": s["chapter"],
             "ayah": s["verse"],
-            "text": u["text"],
+            "text": s["text"],
             "english": e["text"],
             "norm": normalize(s["text"]),
         })
 
     # Quotes often span several short verses (e.g. Surat Al-Ikhlas), so also
     # index runs of 2 and 3 consecutive verses within the same surah.
-    rows = list(zip(simple, uthmani, english))
+    rows = [(s, None, e) for s, e in zip(simple, english)]
     for size in (2, 3):
         for i in range(len(rows) - size + 1):
             run = rows[i:i + size]
@@ -96,7 +105,7 @@ def build():
                 "surah": c,
                 "ayah": a,
                 "ayah_end": b,
-                "text": " ".join(f"{u['text']} ({s['verse']})" for s, u, _ in run),
+                "text": " ".join(f"{s['text']} ({s['verse']})" for s, _, _ in run),
                 "english": " ".join(e["text"] for _, _, e in run),
                 "norm": " ".join(normalize(s["text"]) for s, _, _ in run),
             })
@@ -129,9 +138,33 @@ def build():
                 "norm": normalize(text),
             })
 
-    OUT.write_text(json.dumps(records, ensure_ascii=False), encoding="utf-8")
+    write(records)
     nq = sum(r["type"] == "quran" for r in records)
-    print(f"{nq} verses, {len(records) - nq} hadiths -> {OUT}")
+    print(f"{nq} verse records, {len(records) - nq} hadiths -> {DATA}")
+
+
+def write(records):
+    db_path = DATA / "corpus.db"
+    db_path.unlink(missing_ok=True)
+    db = sqlite3.connect(db_path)
+    db.execute("""CREATE TABLE records (id INTEGER PRIMARY KEY, type TEXT, ref TEXT, book TEXT,
+                  number REAL, surah INTEGER, ayah INTEGER, ayah_end INTEGER,
+                  text TEXT, english TEXT, grades TEXT, norm TEXT)""")
+    db.executemany(
+        "INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        [(i, r["type"], r["ref"], r.get("book"), r.get("number"), r.get("surah"), r.get("ayah"),
+          r.get("ayah_end"), r["text"], r.get("english", ""), json.dumps(r.get("grades", []), ensure_ascii=False),
+          r["norm"]) for i, r in enumerate(records)])
+    db.commit()
+    db.close()
+
+    vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 4), sublinear_tf=True, min_df=2, dtype=np.float32)
+    matrix = vec.fit_transform([r["norm"] for r in records]).astype(np.float32)
+    vec.stop_words_ = None  # large and not needed at query time
+    sparse.save_npz(DATA / "tfidf.npz", matrix)
+    with open(DATA / "vectorizer.pkl", "wb") as f:
+        pickle.dump(vec, f)
+    np.save(DATA / "types.npy", np.array([0 if r["type"] == "quran" else 1 for r in records], dtype=np.int8))
 
 
 if __name__ == "__main__":

@@ -4,21 +4,27 @@ Stage 1 (recall): character n-gram TF-IDF narrows ~42k texts to a few
 dozen candidates. Character n-grams tolerate small spelling differences
 that word-level search would miss.
 
-Stage 2 (precision): for each candidate, slide a window over its words and
-find the span most similar to the quote. That span is what we show as the
-"correct text", and its similarity decides the verdict.
+Stage 2 (precision): for each candidate, align the quote to the most
+similar span of its text. That span is what we show as the "correct text",
+and its similarity decides the verdict.
+
+Memory: the index is built ahead of time by build_index.py. At runtime only
+the sparse index sits in memory; texts are read from SQLite for the few
+candidates of each query, which keeps the server within free hosting limits.
 """
 import json
+import pickle
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 from rapidfuzz import fuzz
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import linear_kernel
+from scipy import sparse
 
 from arabic import normalize
 
-CORPUS = Path(__file__).resolve().parent.parent / "data" / "corpus.json"
+DATA = Path(__file__).resolve().parent.parent / "data"
 
 FOUND = 90      # near-identical wording
 PARTIAL = 70    # same text, noticeably different wording
@@ -69,11 +75,27 @@ def _rank_key(m: "Match"):
 
 
 class Matcher:
-    def __init__(self, corpus_path: Path = CORPUS):
-        self.records = json.loads(corpus_path.read_text(encoding="utf-8"))
-        self.norms = [r["norm"] for r in self.records]
-        self.vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 4), sublinear_tf=True, min_df=2)
-        self.matrix = self.vec.fit_transform(self.norms)
+    def __init__(self, data_dir: Path = DATA):
+        with open(data_dir / "vectorizer.pkl", "rb") as f:
+            self.vec = pickle.load(f)
+        self.matrix = sparse.load_npz(data_dir / "tfidf.npz").tocsr()
+        self.types = np.load(data_dir / "types.npy")  # 0 = quran, 1 = hadith
+        self.count = self.matrix.shape[0]
+        self.db = sqlite3.connect(data_dir / "corpus.db", check_same_thread=False)
+        self.db.row_factory = sqlite3.Row
+
+    def fetch(self, ids: list[int]) -> dict[int, dict]:
+        rows = self.db.execute(
+            f"SELECT * FROM records WHERE id IN ({','.join('?' * len(ids))})", [int(i) for i in ids]
+        ).fetchall()
+        out = {}
+        for row in rows:
+            r = dict(row)
+            r["grades"] = json.loads(r["grades"] or "[]")
+            if r["ayah_end"] is None:
+                del r["ayah_end"]
+            out[r["id"]] = r
+        return out
 
     @staticmethod
     def _best_span(q: str, doc: str) -> tuple[float, str]:
@@ -95,20 +117,17 @@ class Matcher:
         q_words = q.split()
         if len(q_words) < MIN_WORDS:
             return []
-        sims = linear_kernel(self.vec.transform([q]), self.matrix).ravel()
-        order = sims.argsort()[::-1]
-        cands = []
-        for i in order:
-            if kind and self.records[i]["type"] != kind:
-                continue
-            cands.append(i)
-            if len(cands) >= k:
-                break
+        sims = (self.matrix @ self.vec.transform([q]).T).toarray().ravel()
+        if kind:
+            sims[self.types != (0 if kind == "quran" else 1)] = -1
+        cands = np.argpartition(-sims, k)[:k]
+        records = self.fetch(list(cands))
         results = []
         for i in cands:
-            score, span = self._best_span(q, self.norms[i])
+            r = records[int(i)]
+            score, span = self._best_span(q, r["norm"])
             if score >= PARTIAL - 15:
-                results.append(Match(self.records[i], score, span, coverage(q, span)))
+                results.append(Match(r, score, span, coverage(q, span)))
         results.sort(key=_rank_key, reverse=True)
         return results[:top]
 

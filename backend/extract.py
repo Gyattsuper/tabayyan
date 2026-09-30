@@ -16,6 +16,21 @@ _INTRO = re.compile(
 _QUOTES = re.compile(r"[«\"“﴿]([^»\"”﴾]{8,})[»\"”﴾]")
 _SENTENCE_END = re.compile(r"[.!؟?\n]|انشر|شارك|ارسل|أرسل|تؤجر")
 
+_CLAIMS_HADITH = re.compile(r"رسول\s+الله|النبي|الرسول|المصطفى|نبينا|ﷺ|صل[ىي]\s+الله\s+عليه\s+وسلم|حديث")
+_CLAIMS_QURAN = re.compile(r"قال\s+(?:الله\s+)?تعالى|الله\s+عز\s+وجل|سبحانه|آية|الآية|القرآن|﴿")
+
+
+def claimed_kind(text: str) -> str | None:
+    """What the message says the quote is: 'hadith', 'quran', or None if it doesn't say."""
+    h, q = _CLAIMS_HADITH.search(text), _CLAIMS_QURAN.search(text)
+    if h and not q:
+        return "hadith"
+    if q and not h:
+        return "quran"
+    if h and q:
+        return "hadith" if h.start() < q.start() else "quran"
+    return None
+
 
 def candidates(text: str) -> list[str]:
     """Possible quote spans, most specific first. Always ends with the full text."""
