@@ -1,5 +1,7 @@
 # تبيّن | Tabayyan
 
+**Live demo:** https://tabayyan.onrender.com (free hosting: the first visit after a quiet period can take up to a minute to wake up)
+
 Verify Quran and hadith quotes against authenticated sources before sharing them.
 
 Paste a message, or select text on any page with the Chrome extension. Tabayyan finds the
@@ -62,8 +64,7 @@ and explanations. Without it, the app uses rule-based extraction and template ex
 ## Chrome extension
 
 1. Open `chrome://extensions`, turn on Developer mode, click "Load unpacked", select `extension/`.
-2. Open the extension's options and set the server address to the Render URL.
-3. Select text on any page, right-click, and choose "تحقّق مع تبيّن".
+2. Select text on any page, right-click, and choose "تحقّق مع تبيّن".
 
 ## Development history
 

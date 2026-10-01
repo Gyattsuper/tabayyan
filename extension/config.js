@@ -1,6 +1,6 @@
 // Shared settings for the extension.
 // After deploying the API, set the server address in the extension's options page.
-export const DEFAULT_API = "http://localhost:8000";
+export const DEFAULT_API = "https://tabayyan.onrender.com";
 
 export async function apiBase() {
   const { api } = await chrome.storage.sync.get("api");
