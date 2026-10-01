@@ -31,6 +31,13 @@ message ──► extract quote ──► search ──► align ──► verdi
 
 Sources and licenses: `SOURCES.md`. Test plan: `TESTING.md`.
 
+## Evaluation
+
+Compared with plain text search over the same books (1,575 generated quotes, 5 random samples),
+Tabayyan finds real quotes typed with everyday spelling 99% of the time versus 8%, and catches
+altered quotes with the correct text shown 99.8% of the time, while accepting none of them as
+correct. Details and limits: `TESTING.md`.
+
 ## Run locally
 
 ```bash
@@ -60,6 +67,6 @@ and explanations. Without it, the app uses rule-based extraction and template ex
 
 ## Development history
 
-The first commit (tag `starting-version`) was made on Sep 30, 2026, before the challenge days, and
-contains the data pipeline, Arabic matcher, verdict rules and test set. Later commits show the rest
-of the work. See `git log`.
+The first commit (`440f70a`, "Starting version") was made on Sep 30, 2026, before the challenge days,
+and contains the data pipeline, Arabic matcher, verdict rules and test set. Later commits show the
+rest of the work. See `git log`.
