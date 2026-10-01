@@ -18,6 +18,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+from difflib import SequenceMatcher
+
 import numpy as np
 from rapidfuzz import fuzz
 from scipy import sparse
@@ -30,6 +32,7 @@ FOUND = 90      # near-identical wording
 PARTIAL = 70    # same text, noticeably different wording
 MIN_WORDS = 3   # quotes shorter than this are too ambiguous to judge
 MIN_COVERAGE = 0.6  # share of the quote's content words that must appear in the source
+MIN_SHARED = 3      # and at least this many of them, so a 3-word saying sharing 2 common words isn't "partial"
 
 # Particles and filler words. Two texts sharing only these are not the same text.
 STOPWORDS = set(normalize(
@@ -46,10 +49,12 @@ def content_words(text: str) -> list[str]:
 def coverage(q: str, span: str) -> float:
     """Share of the quote's content words found exactly in the matched span."""
     qw = content_words(q)
-    if not qw:
-        return 0.0
+    return shared_words(q, span) / len(qw) if qw else 0.0
+
+
+def shared_words(q: str, span: str) -> int:
     sw = set(span.split())
-    return sum(w in sw for w in qw) / len(qw)
+    return sum(w in sw for w in content_words(q))
 
 
 @dataclass
@@ -58,6 +63,28 @@ class Match:
     score: float           # 0-100, how close the quote is to the best span
     span: str = ""         # the matching span in the source (normalized words)
     coverage: float = 0.0  # share of the quote's content words present in the span
+    exact: bool = False    # every word of the quote matches the source in order, nothing changed or skipped
+    shared: int = 0        # number of the quote's content words present in the span
+
+
+def is_exact(q: str, span: str) -> bool:
+    """True when the quote is a contiguous, word-for-word piece of the span.
+
+    The span may have extra words before or after the quote (quoting part of a
+    verse is fine), but no word may be changed, added, or dropped inside it.
+    """
+    qw, sw = q.split(), span.split()
+    ops = SequenceMatcher(a=qw, b=sw, autojunk=False).get_opcodes()
+    eq = [i for i, o in enumerate(ops) if o[0] == "equal"]
+    if not eq:
+        return False
+    for i, (tag, *_rest) in enumerate(ops):
+        if tag == "equal":
+            continue
+        if tag == "insert" and (i < eq[0] or i > eq[-1]):
+            continue  # source words before/after the quoted part
+        return False
+    return True
 
 
 # When the same text appears in several places, cite the strongest source first.
@@ -71,7 +98,7 @@ def _rank_key(m: "Match"):
         source = (2, -len(r["norm"]))
     else:
         source = (1, -BOOK_PRIORITY.index(r["book"]))
-    return (round(m.score), m.coverage, source)
+    return (m.exact, round(m.score), m.coverage, source)
 
 
 class Matcher:
@@ -127,7 +154,7 @@ class Matcher:
             r = records[int(i)]
             score, span = self._best_span(q, r["norm"])
             if score >= PARTIAL - 15:
-                results.append(Match(r, score, span, coverage(q, span)))
+                results.append(Match(r, score, span, coverage(q, span), is_exact(q, span), shared_words(q, span)))
         results.sort(key=_rank_key, reverse=True)
         return results[:top]
 
@@ -138,9 +165,9 @@ def verdict(matches: list[Match]) -> str:
     m = matches[0]
     # "found" means every meaningful word matches exactly. A single changed word
     # in a verse or hadith must never pass as correct.
-    if m.score >= FOUND and m.coverage == 1.0:
+    if m.exact and m.coverage == 1.0:
         return "found"
-    if m.score >= PARTIAL and m.coverage >= MIN_COVERAGE:
+    if m.score >= PARTIAL and m.coverage >= MIN_COVERAGE and m.shared >= MIN_SHARED:
         return "partial"
     return "not_found"
 

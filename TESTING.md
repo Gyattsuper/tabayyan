@@ -1,6 +1,51 @@
 # Test plan
 
-Run: `python tests/run_tests.py` (17 cases, all passing).
+Two levels of testing:
+
+1. `python tests/run_tests.py`: 17 hand-written cases covering each behavior (all passing).
+2. `python eval/run_eval.py <seed>`: a larger generated evaluation that compares Tabayyan with plain
+   text search. Results below.
+
+## Evaluation against an alternative
+
+**The alternative:** what a careful person can do today without Tabayyan. Remove the diacritics and
+search the same nine books for the exact words, like Ctrl+F on a hadith website. Both search the same
+sources, so the comparison isolates what the matching and verdict logic add.
+
+**The test set,** generated from the sources with a fixed random seed, 5 seeds:
+
+- *real/plain*: 60 hadith passages (from the narrated text, not the chain) and 40 verses, 9 words each, typed without diacritics
+- *real/casual*: the same, typed the way people often write (أ إ آ → ا، ة → ه، ى → ي)
+- *altered*: the same with one word inside the quote replaced or dropped
+- *unsourced*: 15 popular sayings commonly attributed to the Prophet ﷺ that are not in these books
+
+**Results (500 quotes per group over 5 seeds, 75 for unsourced):**
+
+| Task | Plain text search | Tabayyan |
+|---|---|---|
+| Finds a real quote typed without diacritics | 88.2% | **99.2%** |
+| Finds a real quote typed with everyday spelling | 7.8% | **99.2%** |
+| Detects an altered quote and shows the correct text | 0% (can only say "not found") | **99.8%** |
+| Accepts an altered quote as correct | 0% | **0%** |
+| Reports unsourced sayings as not found | 100% | **100%** |
+
+Raw results per item: `eval/results_seed*.json`. Summary: `eval/summary.json`.
+
+**What the evaluation caught and how it was fixed.** The first run showed that **28% of altered
+quotes were accepted as "found"**, mostly when one word was dropped or replaced by a common word
+like "الله" that the coverage check ignored. The verdict was changed so that "found" requires a
+word-for-word match with nothing changed or skipped inside the quote (`is_exact` in
+`backend/matcher.py`). After the fix: 0 of 500. The same run showed a 3-word saying
+("خير الأمور أوسطها") reported as a partial match because it shared 2 common words with a real
+hadith; partial matches now need at least 3 shared meaningful words.
+
+**Remaining misses (0.8%)** are passages from the chain of narration or from Tirmidhi's own
+comments ("قال أبو عيسى..."), which users don't quote in practice. They are reported as
+"partial", never as "found" for the wrong text.
+
+**Limits of this evaluation.** The quotes are generated from the sources, not collected from real
+messages, and the unsourced list is small. Testing with real users (imams, content creators) and
+real forwarded messages is the next step.
 
 ## What is tested and why
 

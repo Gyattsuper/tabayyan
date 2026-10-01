@@ -1,0 +1,34 @@
+{
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "aggregate": {
+  "real/plain": {
+   "n": 500,
+   "baseline_found": 0.882,
+   "tabayyan_found": 0.992
+  },
+  "real/casual": {
+   "n": 500,
+   "baseline_found": 0.078,
+   "tabayyan_found": 0.992
+  },
+  "altered": {
+   "n": 500,
+   "baseline_shows_correct_text": 0.0,
+   "baseline_wrongly_found": 0.0,
+   "tabayyan_partial_with_correct_text": 0.998,
+   "tabayyan_wrongly_found": 0.0,
+   "tabayyan_not_found": 0.002
+  },
+  "unsourced": {
+   "n": 75,
+   "baseline_not_found": 1.0,
+   "tabayyan_not_found": 1.0
+  }
+ }
+}
