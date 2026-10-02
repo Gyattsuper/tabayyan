@@ -179,7 +179,9 @@ class Matcher:
         sims = (matrix @ vec.transform([q]).T).toarray().ravel()
         if kind:
             sims[types != (0 if kind == "quran" else 1)] = -1
-        k = min(k * (2 if english else 1), len(sims) - 1)
+        # English: each verse is indexed in four translations and in runs of verses, and long
+        # hadith translations score lower in a word index, so look at more candidates.
+        k = min(k * (10 if english else 1), len(sims) - 1)
         cands = np.argpartition(-sims, k)[:k]
         records = fetch(list(cands))
         results = []

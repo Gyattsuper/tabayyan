@@ -3,49 +3,82 @@
 Two levels of testing:
 
 1. `python tests/run_tests.py`: 22 hand-written cases covering each behavior (all passing).
-2. `python eval/run_eval.py <seed>`: a larger generated evaluation that compares Tabayyan with plain
-   text search. Results below.
+2. `python eval/run_eval.py [n_samples]`: a large generated evaluation that compares Tabayyan with
+   plain text search, in Arabic and English. Results below.
 
 ## Evaluation against an alternative
 
 **The alternative:** what a careful person can do today without Tabayyan. Remove the diacritics and
-search the same nine books for the exact words, like Ctrl+F on a hadith website. Both search the same
+search the same nine books for the exact words, like Ctrl+F on a hadith website. For English: search
+the same translations for the exact words (ignoring capitals and punctuation). Both search the same
 sources, so the comparison isolates what the matching and verdict logic add.
 
-**The test set,** generated from the sources with a fixed random seed, 5 seeds:
+**The test set** is generated from the sources. Each of **100 random samples** (fixed seeds 1 to 100,
+so anyone can rerun it) draws new quotes:
 
-- *real/plain*: 60 hadith passages (from the narrated text, not the chain) and 40 verses, 9 words each, typed without diacritics
+- *real/plain*: 60 hadith passages (from the narrated text, not the chain) and 40 verses, 6 to 15 words long, typed without diacritics
 - *real/casual*: the same, typed the way people often write (أ إ آ → ا، ة → ه، ى → ي)
 - *altered*: the same with one word inside the quote replaced or dropped
-- *unsourced*: 15 popular sayings commonly attributed to the Prophet ﷺ that are not in these books
+- *english/real*: 40 verses (Saheeh International) and 60 hadiths (sunnah.com translation, the Prophet's words), 6 to 15 words
+- *english/altered*: the same with one word replaced or dropped
+- *unsourced*: 49 popular sayings commonly attributed to the Prophet ﷺ that are not in these books (Arabic), and 23 in English. These are fixed lists, so each saying is counted once.
 
-**Results (500 quotes per group over 5 seeds, 75 for unsourced):**
+**Results.** 10,000 quotes per group (about 60,000 in total). The range after each number is the
+95% confidence interval.
 
 | Task | Plain text search | Tabayyan |
 |---|---|---|
-| Finds a real quote typed without diacritics | 88.2% | **99.2%** |
-| Finds a real quote typed with everyday spelling | 7.8% | **99.2%** |
-| Detects an altered quote and shows the correct text | 0% (can only say "not found") | **99.8%** |
-| Accepts an altered quote as correct | 0% | **0%** |
-| Reports unsourced sayings as not found | 100% | **100%** |
+| Finds a real quote typed without diacritics | 82.3% | **99.4%** (99.2 to 99.5) |
+| Finds a real quote typed with everyday spelling | 6.7% | **99.4%** (99.2 to 99.5) |
+| Detects an altered quote and shows the correct text | 0% (can only say "not found") | **98.1%** (97.8 to 98.4) |
+| Accepts an altered quote as correct | 0% | **0.8%** (see below) |
+| Reports unsourced sayings as not found (49) | 100% | **100%** (92.7 to 100) |
+| English: finds a real quote | 99.9% | **99.7%** (99.5 to 99.8) |
+| English: detects an altered quote and shows the correct text | 0% | **94.0%** (93.6 to 94.5) |
+| English: accepts an altered quote as correct | 0% | **0%** |
+| English: reports unsourced sayings as not found (23) | 100% | **95.7%** (22 of 23) |
 
-Raw results per item: `eval/results_seed*.json`. Summary: `eval/summary.json`.
+By type: real verses are found 100% of the time in both languages; real hadith passages 99.0%
+(Arabic) and 99.4% (English).
+
+Raw results per quote: `eval/results.json.gz`. Summary: `eval/summary.json`.
+
+**Reading the misses honestly:**
+
+- *Altered quotes accepted (0.8%, 83 of 9,986).* We checked all 83. In every one, the changed word
+  was in the chain of narration before "قال رسول الله" or "عن النبي". Tabayyan treats the text after
+  that phrase as the quote, and that part was correct. So the verdict on the quoted words was right,
+  but a change in the narrator chain before them is not checked. Real messages rarely quote chains.
+- *Real quotes missed (Arabic 0.6%).* Passages from the chain of narration or from Tirmidhi's own
+  comments ("قال أبو عيسى..."). They are reported as "partial", never as "found" for a wrong text.
+- *English altered quotes not detected (5.9%).* Reported as "not found" instead of "partial", mostly
+  short quotes made of common words where the changed word left too few distinctive words to find
+  the source. The quote is still not accepted as correct.
+- *English unsourced (1 of 23).* "Die before you die" (4 words) was reported as a partial match to a
+  hadith that shares its words. The result shows the real hadith text, so the user sees the difference.
+- *English real quotes:* plain search is slightly ahead (99.9% vs 99.7%) because these quotes are exact
+  copies of the translation, which is the easiest case for plain search. Tabayyan's advantage in English
+  is detecting changed words and different spellings, not exact copies.
+
+**History of this evaluation.** The first version (Oct 1) used 5 samples, quotes of exactly 9 words,
+and 15 unsourced sayings counted once per sample. That was too small, so on Oct 2 it was expanded to
+the version above (100 samples, varied quote lengths, 49 + 23 unsourced sayings counted once, English
+groups, confidence intervals). The larger test found cases the small one did not (the 0.8% above, and
+English quotes that needed a wider search, which was then fixed).
 
 **What the evaluation caught and how it was fixed.** The first run showed that **28% of altered
 quotes were accepted as "found"**, mostly when one word was dropped or replaced by a common word
 like "الله" that the coverage check ignored. The verdict was changed so that "found" requires a
 word-for-word match with nothing changed or skipped inside the quote (`is_exact` in
-`backend/matcher.py`). After the fix: 0 of 500. The same run showed a 3-word saying
-("خير الأمور أوسطها") reported as a partial match because it shared 2 common words with a real
-hadith; partial matches now need at least 3 shared meaningful words.
-
-**Remaining misses (0.8%)** are passages from the chain of narration or from Tirmidhi's own
-comments ("قال أبو عيسى..."), which users don't quote in practice. They are reported as
-"partial", never as "found" for the wrong text.
+`backend/matcher.py`). The same run showed a 3-word saying ("خير الأمور أوسطها") reported as a
+partial match because it shared 2 common words with a real hadith; partial matches now need at
+least 3 shared meaningful words. The English run first found only 98.5% of real English quotes,
+because each verse is indexed in four translations and fills the candidate list; the search now
+looks at more candidates for English (99.7% after the fix).
 
 **Limits of this evaluation.** The quotes are generated from the sources, not collected from real
-messages, and the unsourced list is small. Testing with real users (imams, content creators) and
-real forwarded messages is the next step.
+messages, and the unsourced lists are small. Testing with real users (imams, content creators,
+people who introduce Islam to others) and real forwarded messages is the next step.
 
 ## What is tested and why
 

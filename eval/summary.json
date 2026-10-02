@@ -1,34 +1,212 @@
 {
- "seeds": [
-  1,
-  2,
-  3,
-  4,
-  5
+ "seeds": 100,
+ "quotes_per_seed": {
+  "arabic": 100,
+  "english": 100
+ },
+ "quote_words": [
+  6,
+  15
  ],
- "aggregate": {
+ "unsourced_sayings": {
+  "arabic": 49,
+  "english": 23
+ },
+ "summary": {
   "real/plain": {
-   "n": 500,
-   "baseline_found": 0.882,
-   "tabayyan_found": 0.992
+   "n": 10000,
+   "baseline_found": {
+    "rate": 0.8233,
+    "ci95": [
+     0.8157,
+     0.8307
+    ]
+   },
+   "tabayyan_found": {
+    "rate": 0.9941,
+    "ci95": [
+     0.9924,
+     0.9954
+    ]
+   },
+   "tabayyan_found_by_kind": {
+    "hadith": {
+     "rate": 0.9902,
+     "ci95": [
+      0.9873,
+      0.9924
+     ]
+    },
+    "quran": {
+     "rate": 1.0,
+     "ci95": [
+      0.999,
+      1.0
+     ]
+    }
+   }
   },
   "real/casual": {
-   "n": 500,
-   "baseline_found": 0.078,
-   "tabayyan_found": 0.992
+   "n": 10000,
+   "baseline_found": {
+    "rate": 0.0673,
+    "ci95": [
+     0.0626,
+     0.0724
+    ]
+   },
+   "tabayyan_found": {
+    "rate": 0.9941,
+    "ci95": [
+     0.9924,
+     0.9954
+    ]
+   },
+   "tabayyan_found_by_kind": {
+    "hadith": {
+     "rate": 0.9902,
+     "ci95": [
+      0.9873,
+      0.9924
+     ]
+    },
+    "quran": {
+     "rate": 1.0,
+     "ci95": [
+      0.999,
+      1.0
+     ]
+    }
+   }
   },
   "altered": {
-   "n": 500,
-   "baseline_shows_correct_text": 0.0,
-   "baseline_wrongly_found": 0.0,
-   "tabayyan_partial_with_correct_text": 0.998,
-   "tabayyan_wrongly_found": 0.0,
-   "tabayyan_not_found": 0.002
+   "n": 9986,
+   "baseline_wrongly_found": {
+    "rate": 0.0,
+    "ci95": [
+     0.0,
+     0.0004
+    ]
+   },
+   "tabayyan_partial_with_correct_text": {
+    "rate": 0.981,
+    "ci95": [
+     0.9781,
+     0.9835
+    ]
+   },
+   "tabayyan_wrongly_found": {
+    "rate": 0.0083,
+    "ci95": [
+     0.0067,
+     0.0103
+    ]
+   },
+   "tabayyan_not_found": {
+    "rate": 0.0107,
+    "ci95": [
+     0.0089,
+     0.0129
+    ]
+   }
   },
   "unsourced": {
-   "n": 75,
-   "baseline_not_found": 1.0,
-   "tabayyan_not_found": 1.0
+   "n": 49,
+   "baseline_not_found": {
+    "rate": 1.0,
+    "ci95": [
+     0.9273,
+     1.0
+    ]
+   },
+   "tabayyan_not_found": {
+    "rate": 1.0,
+    "ci95": [
+     0.9273,
+     1.0
+    ]
+   }
+  },
+  "english/real": {
+   "n": 10000,
+   "baseline_found": {
+    "rate": 0.9986,
+    "ci95": [
+     0.9977,
+     0.9992
+    ]
+   },
+   "tabayyan_found": {
+    "rate": 0.9965,
+    "ci95": [
+     0.9951,
+     0.9975
+    ]
+   },
+   "tabayyan_found_by_kind": {
+    "hadith": {
+     "rate": 0.9942,
+     "ci95": [
+      0.9919,
+      0.9958
+     ]
+    },
+    "quran": {
+     "rate": 1.0,
+     "ci95": [
+      0.999,
+      1.0
+     ]
+    }
+   }
+  },
+  "english/altered": {
+   "n": 9984,
+   "baseline_wrongly_found": {
+    "rate": 0.0,
+    "ci95": [
+     0.0,
+     0.0004
+    ]
+   },
+   "tabayyan_partial_with_correct_text": {
+    "rate": 0.9405,
+    "ci95": [
+     0.9357,
+     0.945
+    ]
+   },
+   "tabayyan_wrongly_found": {
+    "rate": 0.0,
+    "ci95": [
+     0.0,
+     0.0004
+    ]
+   },
+   "tabayyan_not_found": {
+    "rate": 0.0595,
+    "ci95": [
+     0.055,
+     0.0643
+    ]
+   }
+  },
+  "english/unsourced": {
+   "n": 23,
+   "baseline_not_found": {
+    "rate": 1.0,
+    "ci95": [
+     0.8569,
+     1.0
+    ]
+   },
+   "tabayyan_not_found": {
+    "rate": 0.9565,
+    "ci95": [
+     0.7901,
+     0.9923
+    ]
+   }
   }
  }
 }
