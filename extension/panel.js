@@ -2,7 +2,7 @@
 // shadow root so the page's styles can't break it (and ours can't break the page).
 (function () {
   if (globalThis.TabayyanPanel) return;
-  const { render, CSS, esc } = globalThis.TabayyanRender;
+  const { renderAll, CSS, esc } = globalThis.TabayyanRender;
 
   let host, body;
   function ensure() {
@@ -38,7 +38,7 @@
     },
     show(data) {
       ensure();
-      body.innerHTML = data.results.map(render).join("");
+      body.innerHTML = renderAll(data);
     },
   };
 })();

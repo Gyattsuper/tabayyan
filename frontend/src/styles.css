@@ -15,6 +15,8 @@
   --partial-bg: #fdf3e0;
   --missing: #c23b3b;
   --missing-bg: #fcebeb;
+  --scope: #193565;
+  --scope-bg: #e8eef8;
   --ui: "Readex Pro", system-ui, sans-serif;
   --text: "Amiri", "Noto Naskh Arabic", serif;
 }
@@ -176,6 +178,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 .tone-found { --tone: var(--found); --tone-bg: var(--found-bg); }
 .tone-partial { --tone: var(--partial); --tone-bg: var(--partial-bg); }
 .tone-missing { --tone: var(--missing); --tone-bg: var(--missing-bg); }
+.tone-scope { --tone: var(--scope); --tone-bg: var(--scope-bg); }
 
 .verdict {
   display: flex;
@@ -303,6 +306,7 @@ dd.g-weak { color: var(--missing); }
   color: var(--muted);
 }
 .foot p { margin: 0 0 4px; }
+.foot a { color: var(--navy); }
 
 @media (max-width: 560px) {
   .band h1 { font-size: 32px; }

@@ -60,8 +60,14 @@ function headline(r) {
   if (r.verdict === "found" && m) {
     if (m.grade_status === "weak") return { title: "موجود لكنه ضعيف", tone: "missing", icon: "!" };
     if (m.grade_status === "disputed") return { title: "موجود ومختلف في درجته", tone: "partial", icon: "≈" };
-    const misattributed = (r.claimed === "hadith" && m.type === "quran") || (r.claimed === "quran" && m.type === "hadith");
+    const misattributed = (r.claimed === "hadith" && m.type === "quran") || (r.claimed === "quran" && m.type === "hadith")
+      || (r.claimed === "athar" && m.type === "quran");
     if (misattributed) return { title: "موجود لكن نسبته خاطئة", tone: "partial", icon: "≈" };
+  }
+  // A companion's or scholar's saying that isn't in the hadith books: outside what we search,
+  // so don't show it in the alarming red used for unsourced hadiths.
+  if (r.verdict === "not_found" && r.claimed === "athar") {
+    return { title: "قول منسوب لغير النبي ﷺ", tone: "scope", icon: "؟" };
   }
   return VERDICT[r.verdict];
 }
@@ -227,7 +233,10 @@ export default function App() {
         {state.status === "error" && <p className="error" role="alert">{state.message}</p>}
         {state.status === "loading" && <p className="loading" role="status">نبحث في القرآن الكريم وكتب الحديث…</p>}
         {state.status === "done" && state.data.results.map((r, i) => <Result key={i} r={r} />)}
-        {state.status === "done" && <p className="scope">{state.data.results[0].scope}</p>}
+        {state.status === "done" && state.data.results.length === 0 && (
+          <p className="error" role="alert">{state.data.message}</p>
+        )}
+        {state.status === "done" && state.data.results.length > 0 && <p className="scope">{state.data.results[0].scope}</p>}
 
         {state.status === "idle" && (
           <section className="how">

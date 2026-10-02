@@ -3,7 +3,7 @@ import { checkText } from "./config.js";
 const text = document.getElementById("text");
 const go = document.getElementById("go");
 const out = document.getElementById("out");
-const { render, CSS } = globalThis.TabayyanRender;
+const { renderAll, CSS } = globalThis.TabayyanRender;
 
 const style = document.createElement("style");
 style.textContent = CSS;
@@ -35,7 +35,7 @@ async function check() {
   out.innerHTML = `<p class="msg">نبحث في القرآن الكريم وكتب الحديث…</p>`;
   try {
     const data = await checkText(value);
-    out.innerHTML = data.results.map(render).join("");
+    out.innerHTML = renderAll(data);
   } catch {
     out.innerHTML = `<p class="msg err">تعذر الاتصال بخادم تبيّن. تأكد من عنوان الخادم في الإعدادات.</p>`;
   } finally {

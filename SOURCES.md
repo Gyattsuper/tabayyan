@@ -28,6 +28,8 @@ gradings are shown rather than picking one.
 - "Not found" means not found in the collections above. It does not by itself mean a
   text is fabricated; many texts exist in other books (e.g. Musnad Ahmad, al-Bayhaqi).
   The interface states this and refers the user to scholars.
+- Sayings of companions and scholars are mostly outside these books. When a message attributes a
+  text to one of them, the result says this is outside the search instead of flagging it.
 - Gradings come from the dataset and have not been independently reviewed.
 - Reference links go to Quran.com and Sunnah.com. For Bukhari, Abu Dawud, Tirmidhi, Nasa'i,
   Ibn Majah and Nawawi the numbering was spot-checked against Sunnah.com; Muslim and Malik use a

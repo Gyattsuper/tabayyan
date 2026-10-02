@@ -63,6 +63,14 @@ real forwarded messages is the next step.
 | Weak hadith | اتقوا فراسة المؤمن | found + weak warning | "Found" must not read as "authentic" |
 | Long message | WhatsApp-style text with greeting and "انشروها" | found | Extraction from surrounding text |
 | Unrelated text / too short | shopping sentence / الله أكبر | not_found | No false matches |
+| Companion's saying | قال عمر بن الخطاب لقوم يوقدون نارا: يا أهل الضوء | not_found, "قول منسوب لغير النبي ﷺ" | A saying outside the hadith books must not be shown as a fabricated hadith |
+| No Arabic text | "ar", or only "ﷺ" | a message asking for the text | No crash when there is nothing to search (found while fixing the row above) |
+
+The last two rows were added after a user tried a saying of Umar ibn al-Khattab (رضي الله عنه).
+It is not in the nine books, so the tool showed the red "not found" warning meant for hadiths,
+which read as if the saying were false. Now, when a message attributes a text to a companion or a
+scholar, the result says the search covers only the Quran and hadith books and does not judge the
+attribution. These are checked by hand in the web app; `tests/run_tests.py` covers the matcher only.
 
 ## Safety checks on the AI parts
 
@@ -80,6 +88,8 @@ real forwarded messages is the next step.
 - Gradings are shown as provided by the dataset, per scholar, without our own judgment. Conflicting
   gradings are labeled "مختلف في درجته" and all are shown.
 - Very short quotes (under 3 words) are not judged, since they are too ambiguous.
+- Sayings of companions and scholars (آثار) are only found if they appear in the nine books. Most
+  are reported elsewhere, so for these the tool says it cannot judge the attribution.
 
 ## Performance
 

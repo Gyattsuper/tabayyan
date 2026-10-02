@@ -33,12 +33,13 @@ def enabled() -> bool:
 EXTRACT_SYSTEM = """You extract quoted Quran verses and hadith texts from messages people share.
 
 Return JSON only, in this exact shape:
-{"quotes": [{"text": "...", "claimed": "hadith" | "quran" | "unknown"}]}
+{"quotes": [{"text": "...", "claimed": "hadith" | "quran" | "other" | "unknown"}]}
 
 Rules:
 - Copy each quote exactly as it appears in the message. Never correct, complete, or add words.
 - Leave out introductions ("قال رسول الله ﷺ:", "قال تعالى:"), honorifics, and surrounding commentary.
-- "claimed" is what the message says the text is, not what you think it is.
+- "claimed" is what the message says the text is, not what you think it is. Use "other" when the
+  message attributes it to a companion, a scholar, or anyone other than the Prophet ﷺ or Allah.
 - If there is no quote, return {"quotes": []}.
 - If the whole message is the quote, return it whole."""
 
@@ -68,7 +69,8 @@ def extract_quotes(message: str) -> list[dict] | None:
         t = str(q.get("text", "")).strip()
         if t and normalize(t) and normalize(t) in msg:
             claimed = q.get("claimed")
-            out.append({"text": t, "claimed": claimed if claimed in ("hadith", "quran") else None})
+            claimed = {"hadith": "hadith", "quran": "quran", "other": "athar"}.get(claimed)
+            out.append({"text": t, "claimed": claimed})
     return out
 
 
@@ -82,6 +84,9 @@ Rules:
 - For "not_found": say the text was not found in the searched collections, that this alone does not prove it is fabricated, and suggest asking a qualified scholar before sharing it.
 - For "partial": point out which words differ from the source.
 - If gradings differ between scholars, say so without choosing between them.
+- If "claimed_as" is "athar", the message attributes the text to a companion or scholar, not the Prophet.
+  If it was not found, say only that the searched sources are the Quran and hadith books, that such
+  sayings are often reported elsewhere, and that this result does not judge the attribution.
 - If the only grading's "scholar" is the collection itself (صحيح البخاري or صحيح مسلم), do not say a person graded it. Say it is in that Sahih, whose hadiths are accepted as authentic.
 - Do not use digits except the reference number exactly as given.
 - No greetings, no markdown."""

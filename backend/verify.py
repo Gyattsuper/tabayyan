@@ -148,12 +148,21 @@ def build_result(quote: str, claimed: str | None, matches: list[Match], lang: st
 
         if claimed == "hadith" and r["type"] == "quran":
             res["warnings"].append("هذا النص آية من القرآن الكريم، وليس حديثًا نبويًا كما ورد في الرسالة.")
+        if claimed == "athar" and r["type"] == "quran":
+            res["warnings"].append("هذا النص آية من القرآن الكريم، وليس من كلام من نُسب إليه في الرسالة.")
         if claimed == "quran" and r["type"] == "hadith":
             res["warnings"].append("هذا النص ليس آية قرآنية، وإنما ورد في كتب الحديث.")
         if r["type"] == "hadith" and status == "weak":
             res["warnings"].append("النص موجود في المصدر، لكن العلماء المذكورين حكموا عليه بالضعف، فلا تصح نسبته إلى النبي ﷺ بثقة.")
         if r["type"] == "hadith" and status == "disputed":
             res["warnings"].append("اختلف العلماء في درجة هذا الحديث، والأحكام معروضة كما وردت.")
+    elif claimed == "athar":
+        # A companion's or scholar's saying: many are reported in books we don't index,
+        # so "not found" here says nothing about whether the attribution is right.
+        res["warnings"].append("الرسالة تنسب هذا القول إلى أحد الصحابة أو العلماء، لا إلى النبي ﷺ. "
+                               "تبيّن يبحث في القرآن وكتب الحديث فقط، وكثير من أقوال الصحابة والعلماء مروية في "
+                               "كتب أخرى لا يشملها البحث، فعدم وجوده هنا لا يعني أن نسبته خاطئة. "
+                               "للتحقق منه ارجع إلى كتب الآثار وأهل العلم، ولا تنسبه إلى النبي ﷺ.")
     else:
         res["warnings"].append("لم نجد هذا النص في المصادر التي نبحث فيها. هذا وحده لا يعني أنه مكذوب، "
                                "لكن لا تنشره منسوبًا إلى القرآن أو السنة قبل سؤال أهل العلم.")
@@ -215,6 +224,8 @@ def verify(matcher: Matcher, message: str, lang: str = "ar") -> dict:
                 key = (_RANK[verdict(ms)], ms[0].score if ms else 0)
                 if best is None or key > best[0]:
                     best = (key, cand, ms)
+            if best is None:
+                continue
             claimed = q["claimed"] or claimed_kind(message)
             results.append(build_result(best[1], claimed, best[2], lang))
 
@@ -228,6 +239,10 @@ def verify(matcher: Matcher, message: str, lang: str = "ar") -> dict:
                 best = (key, cand, ms)
             if key[0] == 2:
                 break
-        results.append(build_result(best[1], claimed_kind(message), best[2], lang))
+        if best is not None:
+            results.append(build_result(best[1], claimed_kind(message), best[2], lang))
 
-    return {"extractor": extractor, "results": results}
+    out = {"extractor": extractor, "results": results}
+    if not results:
+        out["message"] = "لم نجد في النص كلمات عربية يمكن البحث عنها. الصق نص الآية أو الحديث نفسه."
+    return out
