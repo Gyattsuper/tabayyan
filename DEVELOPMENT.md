@@ -30,7 +30,7 @@ The work done before Oct 4 is listed here openly so judges can see what existed 
 | `ad989c2` | The site and README say the extension is a beta installed from the repo, not from the Chrome Web Store | To describe it accurately. |
 | `108ed42` | Sayings attributed to companions or scholars (e.g. Umar's "يا أهل الضوء") get their own result instead of the red "not found" meant for hadiths; no crash on input with nothing to search | Found by testing with a real saying of Umar ibn al-Khattab. It is not in the hadith books, and the old result read as if it were false. |
 | `309a479` | Arabic / English switch for the site and extension; English quotes checked against four Quran translations and the hadith translations; Claude Sonnet 5.5 instead of Haiku | Track 4 is about people who introduce Islam to others, who often share English translations. A stronger model handles messy messages better. |
-| (this commit) | Evaluation expanded from 5 to **100 samples** (about 60,000 quotes), varied quote lengths, more unsourced sayings counted once each, English groups, 95% confidence intervals; wider search for English quotes | 5 samples and 15 sayings were too small. The larger test found English quotes that were missed (98.5% found); after the fix 99.7%. Full results and every miss explained in `TESTING.md`. |
+| `a18d332` | Evaluation expanded from 5 to **100 samples** (about 60,000 quotes), varied quote lengths, more unsourced sayings counted once each, English groups, 95% confidence intervals; wider search for English quotes | 5 samples and 15 sayings were too small. The larger test found English quotes that were missed (98.5% found); after the fix 99.7%. Full results and every miss explained in `TESTING.md`. |
 
 ## Oct 4 to 6: challenge days
 
