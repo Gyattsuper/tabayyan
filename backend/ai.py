@@ -42,6 +42,11 @@ def client():
     return _client
 
 
+def _text(resp) -> str:
+    """The reply text. Newer models may return thinking blocks before it, so skip those."""
+    return "".join(getattr(b, "text", "") for b in resp.content if getattr(b, "type", "") == "text")
+
+
 def enabled() -> bool:
     return client() is not None
 
@@ -72,7 +77,7 @@ def extract_quotes(message: str) -> list[dict] | None:
             system=EXTRACT_SYSTEM,
             messages=[{"role": "user", "content": message[:4000]}],
         )
-        raw = resp.content[0].text.strip()
+        raw = _text(resp).strip()
         raw = raw[raw.find("{"): raw.rfind("}") + 1]
         quotes = json.loads(raw).get("quotes", [])
     except Exception:
@@ -132,7 +137,7 @@ def explain(result: dict, lang: str = "ar") -> str | None:
             system=EXPLAIN_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": json.dumps(facts, ensure_ascii=False)}],
         )
-        return resp.content[0].text.strip()
+        return _text(resp).strip()
     except Exception:
         log.exception("Claude call failed")
         return None
@@ -167,7 +172,7 @@ def transcribe_image(b64: str, media_type: str) -> str | None:
                 {"type": "text", "text": "Transcribe the text in this image."},
             ]}],
         )
-        return resp.content[0].text.strip()
+        return _text(resp).strip()
     except Exception:
         log.exception("Claude call failed")
         return None
@@ -209,7 +214,7 @@ def search_terms(text: str) -> dict | None:
     try:
         resp = c.messages.create(model=MODEL, max_tokens=300, system=SEARCH_TERMS_SYSTEM,
                                  messages=[{"role": "user", "content": text[:1000]}])
-        d = _json(resp.content[0].text)
+        d = _json(_text(resp))
         en = d.get("en", [])
         en = [str(x) for x in (en if isinstance(en, list) else [en]) if str(x).strip()][:4]
         return {"en": en, "ar": str(d.get("ar", ""))}
@@ -230,7 +235,7 @@ def pick_alternatives(text: str, candidates: list[dict], lang: str) -> list[dict
             model=MODEL, max_tokens=700,
             system=PICK_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": f"Saying:\n{text[:1000]}\n\nCandidates:\n{listing}"}])
-        return [p for p in _json(resp.content[0].text).get("picks", []) if isinstance(p, dict)]
+        return [p for p in _json(_text(resp)).get("picks", []) if isinstance(p, dict)]
     except Exception:
         log.exception("Claude call failed")
         return None
@@ -261,7 +266,7 @@ def write_reply(facts: dict, lang: str) -> str | None:
             model=MODEL, max_tokens=400,
             system=REPLY_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": json.dumps(facts, ensure_ascii=False)}])
-        return resp.content[0].text.strip()
+        return _text(resp).strip()
     except Exception:
         log.exception("Claude call failed")
         return None
