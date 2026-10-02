@@ -25,3 +25,15 @@ export async function checkText(text, lang) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
+export async function checkImage(src, lang) {
+  const body = src.startsWith("data:") ? { image: src } : { image_url: src };
+  const res = await fetch(`${await apiBase()}/api/check-image`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, lang: lang || (await getLang()) }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}

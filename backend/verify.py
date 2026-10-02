@@ -273,9 +273,25 @@ def _looks_english(text: str) -> bool:
     return is_english(text)
 
 
-BOOK_NAMES = ["البخاري", "مسلم", "أبي داود", "أبو داود", "الترمذي", "النسائي", "ابن ماجه", "مالك", "الموطأ",
-              "النووية", "القدسية", "أحمد", "المسند", "البيهقي", "الطبراني", "الحاكم", "Bukhari", "Muslim",
-              "Dawud", "Tirmidhi", "Nasa", "Majah", "Malik", "Nawawi", "Ahmad", "Bayhaqi", "Tabarani", "Hakim"]
+BOOK_NAMES = ["البخاري", "مسلم", "أبي داود", "أبو داود", "الترمذي", "النسائي", "ابن ماجه", "الموطأ", "موطأ",
+              "النووية", "القدسية", "مسند أحمد", "المسند", "البيهقي", "الطبراني", "الحاكم", "Bukhari",
+              "Sahih Muslim", "Dawud", "Tirmidhi", "Nasai", "Nasa'i", "Majah", "Muwatta", "Nawawi", "Musnad",
+              "Bayhaqi", "Tabarani", "Hakim"]
+
+
+def _words(text: str) -> str:
+    """Arabic and English words of a text, normalized, space-padded for whole-word search."""
+    return f" {normalize(text)} {normalize_en(text)} "
+
+
+def names_unknown_book(text: str, allowed: str) -> bool:
+    """True if text names a hadith book (as a whole word) that is not in `allowed`."""
+    t, a = _words(text), _words(allowed)
+    for name in BOOK_NAMES:
+        n = (normalize(name) or normalize_en(name)).strip()
+        if n and f" {n} " in t and f" {n} " not in a:
+            return True
+    return False
 
 
 def explanation_is_grounded(expl: str, res: dict, matches: list[Match] | None = None) -> bool:
@@ -286,11 +302,8 @@ def explanation_is_grounded(expl: str, res: dict, matches: list[Match] | None = 
         refs = [res["match"]["ref"]] + [o["ref"] for o in res["others"]]
         refs += [r.get("ref") or "" for r in recs] + [r.get("ref_en") or "" for r in recs]
     allowed = " ".join(refs)
-    allowed_n = normalize(allowed)
-    for name in BOOK_NAMES:
-        n = normalize(name) or name.lower()
-        if (n in normalize(expl) or name.lower() in expl.lower()) and n not in allowed_n and name not in allowed:
-            return False
+    if names_unknown_book(expl, allowed):
+        return False
     for num in re.findall(r"\d+", expl.translate(str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789"))):
         if num not in re.findall(r"\d+", allowed):
             return False

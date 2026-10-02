@@ -34,13 +34,13 @@
   }
 
   globalThis.TabayyanPanel = {
-    loading(lang) {
+    loading(lang, image) {
       ensure(lang);
-      body.innerHTML = `<p class="msg" dir="${str(lang).dir}">${str(lang).loading}</p>`;
+      body.innerHTML = `<p class="msg" dir="${str(lang).dir}">${image ? str(lang).reading : str(lang).loading}</p>`;
     },
-    error(lang) {
+    error(lang, message) {
       ensure(lang);
-      body.innerHTML = `<p class="msg err" dir="${str(lang).dir}">${esc(str(lang).netError)}</p>`;
+      body.innerHTML = `<p class="msg err" dir="${str(lang).dir}">${esc(message || str(lang).netError)}</p>`;
     },
     show(data) {
       ensure(data.lang);

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ImageButton, Learn, ResultActions, X, checkImage } from "./extras.jsx";
 
 const API = import.meta.env.VITE_API_URL || "";
 
@@ -172,7 +173,7 @@ function headline(r, t) {
   return { title: t.verdict[r.verdict], tone, icon };
 }
 
-function Result({ r, t }) {
+function Result({ r, t, lang, aiOn }) {
   const v = headline(r, t);
   const m = r.match;
   const en = m && m.words_lang === "en";
@@ -251,6 +252,8 @@ function Result({ r, t }) {
           <p dir="ltr" lang="en">{m.english}</p>
         </details>
       )}
+
+      <ResultActions key={`${r.quote}-${lang}`} r={r} lang={lang} aiOn={aiOn} />
     </article>
   );
 }
@@ -259,8 +262,27 @@ export default function App() {
   const [lang, setLang] = useState(initialLang);
   const [text, setText] = useState("");
   const [state, setState] = useState({ status: "idle" });
+  const [aiOn, setAiOn] = useState(false);
   const inputRef = useRef(null);
   const t = T[lang];
+  const x = X[lang];
+
+  useEffect(() => {
+    fetch(`${API}/api/health`).then((r) => r.json()).then((h) => setAiOn(Boolean(h.claude))).catch(() => {});
+    // Opened from the phone's share menu (installed app): check the shared text right away.
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const shared = [q.get("title"), q.get("text"), q.get("url")].filter(Boolean).join("\n").trim();
+      if (shared) {
+        setText(shared);
+        check(shared);
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -298,6 +320,26 @@ export default function App() {
     // Results are written in the chosen language, so fetch them again.
     if (state.status === "done") check(text, l);
     else if (state.status === "error") setState({ status: "idle" });
+  }
+
+  async function checkFile(file, l = lang) {
+    setState({ status: "loading", message: X[l].reading });
+    try {
+      const data = await checkImage(file, l);
+      if (data.transcript) setText(data.transcript);
+      setState({ status: "done", data, fromImage: true });
+    } catch (e) {
+      const msg = String(e.message || "");
+      setState({ status: "error", message: msg && !/^\d+$/.test(msg) ? msg : T[l].netError });
+    }
+  }
+
+  function onPaste(e) {
+    const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+    if (item) {
+      e.preventDefault();
+      checkFile(item.getAsFile());
+    }
   }
 
   function tryExample(ex) {
@@ -344,6 +386,12 @@ export default function App() {
             value={text}
             dir="auto"
             onChange={(e) => setText(e.target.value)}
+            onPaste={onPaste}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              const f = e.dataTransfer?.files?.[0];
+              if (f && f.type.startsWith("image/")) { e.preventDefault(); checkFile(f); }
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) check();
             }}
@@ -354,6 +402,7 @@ export default function App() {
             <button type="submit" disabled={state.status === "loading"}>
               {state.status === "loading" ? t.checking : t.check}
             </button>
+            {aiOn && <ImageButton lang={lang} disabled={state.status === "loading"} onFile={(f) => checkFile(f)} />}
             <div className="examples">
               <span>{t.try}</span>
               {t.examples.map((ex) => (
@@ -366,8 +415,11 @@ export default function App() {
         </form>
 
         {state.status === "error" && <p className="error" role="alert">{state.message}</p>}
-        {state.status === "loading" && <p className="loading" role="status">{t.loading}</p>}
-        {state.status === "done" && state.data.results.map((r, i) => <Result key={i} r={r} t={t} />)}
+        {state.status === "loading" && <p className="loading" role="status">{state.message || t.loading}</p>}
+        {state.status === "done" && state.fromImage && state.data.transcript && (
+          <p className="transcript-note">{x.readFrom}</p>
+        )}
+        {state.status === "done" && state.data.results.map((r, i) => <Result key={i} r={r} t={t} lang={lang} aiOn={aiOn} />)}
         {state.status === "done" && state.data.results.length === 0 && (
           <p className="error" role="alert">{state.data.message}</p>
         )}
@@ -376,8 +428,10 @@ export default function App() {
         {state.status === "idle" && (
           <section className="how">
             {t.how.map((p, i) => <p key={i}>{p}</p>)}
+            {aiOn && <p className="muted small">{x.imageTip}</p>}
           </section>
         )}
+        {state.status === "idle" && <Learn lang={lang} />}
       </main>
 
       <footer className="foot">

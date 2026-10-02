@@ -353,3 +353,110 @@ dd.g-weak { color: var(--missing); }
 .original { margin-top: 10px; }
 .original summary { cursor: pointer; color: var(--muted); font-size: 15px; }
 .original .source-text { font-size: 21px; text-align: right; }
+
+/* ---------- image, actions, alternatives, reply ---------- */
+.img-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--navy);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.img-btn:hover { border-color: var(--sky); }
+.img-btn:disabled { opacity: 0.6; cursor: progress; }
+.transcript-note {
+  margin: 24px 0 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--scope-bg);
+  color: var(--navy);
+  font-size: 14px;
+}
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.error-sm { color: var(--missing); font-size: 14px; }
+
+.actions { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line); }
+.action-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.act {
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--navy);
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.act.ghost { color: var(--navy); background: transparent; border: 1.5px solid var(--line); }
+.act.ghost:hover { border-color: var(--sky); }
+.mini {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--navy);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.mini.wa { color: #fff; background: #1f9d55; border-color: #1f9d55; }
+
+.alts, .reply { margin-top: 14px; }
+.alt {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--found-bg);
+  border: 1px solid #cfeadc;
+}
+.alt-text { margin: 0; font-family: var(--text); font-size: 21px; line-height: 2; }
+.alt-ref { margin: 4px 0 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+.alt-ref a { color: var(--navy); font-weight: 500; }
+.alt-why { margin: 6px 0 0; font-size: 15px; }
+.reply textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  font-family: var(--ui);
+  font-size: 15px;
+  line-height: 1.7;
+  resize: vertical;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* ---------- learn ---------- */
+.learn { margin-top: 36px; }
+.learn h2 { font-size: 22px; margin: 0 0 12px; }
+.daily {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.daily h3, .lessons-h { margin: 0 0 8px; font-size: 15px; color: var(--muted); font-weight: 500; }
+.lessons-h { margin-top: 22px; }
+.daily-text { margin: 0; font-family: var(--text); font-size: 21px; line-height: 2.1; }
+.daily-en { margin: 8px 0 0; font-family: Georgia, serif; font-size: 16px; line-height: 1.6; text-align: left; }
+.lesson {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-top: 8px;
+}
+.lesson summary { cursor: pointer; font-weight: 500; }
+.lesson ul { margin: 8px 0 2px; padding-inline-start: 20px; color: var(--ink); }
+.lesson li { margin-bottom: 4px; }

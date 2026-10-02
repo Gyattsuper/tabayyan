@@ -1,12 +1,15 @@
-"""Claude API integration: quote extraction and plain-language explanations.
+"""Claude API integration.
 
 The model never decides whether a text is authentic. It only:
-  1. finds the quoted verse/hadith inside a messy message, and
-  2. explains a result that was already computed from the source data.
+  1. finds the quoted verse/hadith inside a messy message (or reads it from an image),
+  2. explains a result that was already computed from the source data,
+  3. picks related authentic texts from candidates we retrieved from the sources, and
+  4. drafts a polite reply from the computed facts.
 
-Both steps are guarded: extracted quotes must appear in the user's message
-(so the model cannot invent text), and if the API is unavailable the app
-falls back to rule-based extraction and a template explanation.
+Each step is guarded: extracted quotes must appear in the user's message, picked
+alternatives must be among our candidates and quote their text exactly, and text
+naming a book or number not in the result is rejected. If the API is unavailable
+the app falls back to rules and templates (image reading and alternatives need it).
 """
 import json
 import os
@@ -125,6 +128,131 @@ def explain(result: dict, lang: str = "ar") -> str | None:
             system=EXPLAIN_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": json.dumps(facts, ensure_ascii=False)}],
         )
+        return resp.content[0].text.strip()
+    except Exception:
+        return None
+
+
+# ---------- reading text from images ----------
+
+TRANSCRIBE_SYSTEM = """You transcribe the text in an image (a screenshot, a social media post, a designed card).
+
+Rules:
+- Copy the text exactly as written, line by line, in its original language.
+- Never correct, complete, or "fix" anything. If a verse or hadith looks misquoted, keep it exactly as
+  it appears in the image. People use this to check whether the image is accurate, so a correction would
+  hide the error.
+- Keep diacritics if they are in the image. Do not add any.
+- Skip only interface clutter (timestamps, like counts, app buttons).
+- Output only the transcribed text. If there is no readable text, output nothing."""
+
+
+def transcribe_image(b64: str, media_type: str) -> str | None:
+    c = client()
+    if c is None:
+        return None
+    try:
+        resp = c.messages.create(
+            model=MODEL,
+            max_tokens=1500,
+            system=TRANSCRIBE_SYSTEM,
+            timeout=45,
+            messages=[{"role": "user", "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
+                {"type": "text", "text": "Transcribe the text in this image."},
+            ]}],
+        )
+        return resp.content[0].text.strip()
+    except Exception:
+        return None
+
+
+# ---------- authentic alternatives ----------
+
+SEARCH_TERMS_SYSTEM = """A user checked a saying that was not found in the Quran and hadith collections, or was graded weak.
+We will search authenticated sources for verses and hadiths with a related meaning.
+
+Return JSON only: {"en": ["...", "...", "..."], "ar": "..."}
+- "en": three different short phrasings of the core meaning in plain English, worded the way English
+  translations of hadiths and of the Quran usually word such a meaning (each under 20 words).
+- "ar": 4 to 8 Arabic keywords for the core meaning, as they would appear in classical texts.
+Your phrasings are only used as search queries. Do not attribute anything to the Prophet ﷺ."""
+
+PICK_SYSTEM = """A user checked a saying that was not found in the sources, or was graded weak. Below it are
+candidate texts retrieved from authenticated sources (each with an id).
+
+Pick at most 2 candidates whose meaning is genuinely close to the saying, so the user can share an
+authentic text instead. If none is close, pick none.
+
+Return JSON only: {{"picks": [{{"id": 0, "excerpt": "...", "why": "..."}}]}}
+- "excerpt": copy, exactly and without changes, the shortest part of the candidate's ARABIC text that carries
+  the related meaning (the Prophet's words, not the chain of narrators).
+- "why": one short sentence in {lang} on how its meaning relates to the saying. No references, numbers or book names.
+- Never issue a ruling. Never claim the saying itself is authentic."""
+
+
+def _json(raw: str) -> dict:
+    raw = raw[raw.find("{"): raw.rfind("}") + 1]
+    return json.loads(raw)
+
+
+def search_terms(text: str) -> dict | None:
+    c = client()
+    if c is None:
+        return None
+    try:
+        resp = c.messages.create(model=MODEL, max_tokens=300, system=SEARCH_TERMS_SYSTEM,
+                                 messages=[{"role": "user", "content": text[:1000]}])
+        d = _json(resp.content[0].text)
+        en = d.get("en", [])
+        en = [str(x) for x in (en if isinstance(en, list) else [en]) if str(x).strip()][:4]
+        return {"en": en, "ar": str(d.get("ar", ""))}
+    except Exception:
+        return None
+
+
+def pick_alternatives(text: str, candidates: list[dict], lang: str) -> list[dict] | None:
+    """candidates: [{'id', 'ref', 'arabic', 'english'}]. Returns [{'id', 'excerpt', 'why'}]."""
+    c = client()
+    if c is None:
+        return None
+    listing = "\n\n".join(
+        f"[{x['id']}] {x['ref']}\nArabic: {x['arabic'][:900]}\nEnglish: {x['english'][:500]}" for x in candidates)
+    try:
+        resp = c.messages.create(
+            model=MODEL, max_tokens=700,
+            system=PICK_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
+            messages=[{"role": "user", "content": f"Saying:\n{text[:1000]}\n\nCandidates:\n{listing}"}])
+        return [p for p in _json(resp.content[0].text).get("picks", []) if isinstance(p, dict)]
+    except Exception:
+        return None
+
+
+# ---------- polite reply ----------
+
+REPLY_SYSTEM = """Write a short, kind reply that a person can send back to the group or person who shared a
+religious message, based on a verification result. Write it in {lang}, 2 to 4 sentences, warm and respectful,
+never accusing or preachy, the way a polite friend would write on WhatsApp.
+
+Rules:
+- Use ONLY the facts in the JSON. Never add references, gradings, or texts that are not in it.
+- If an authentic alternative is given, you may suggest sharing it instead, quoting its excerpt exactly.
+- End with the source link if one is given, on its own line.
+- Never issue a ruling. For "not found", say it was not found in the main hadith collections and that it is
+  better not to attribute it to the Prophet ﷺ without a known source; do not call it a lie.
+- Do not use digits except inside the reference exactly as given and the link.
+- No markdown, no hashtags, at most one emoji."""
+
+
+def write_reply(facts: dict, lang: str) -> str | None:
+    c = client()
+    if c is None:
+        return None
+    try:
+        resp = c.messages.create(
+            model=MODEL, max_tokens=400,
+            system=REPLY_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
+            messages=[{"role": "user", "content": json.dumps(facts, ensure_ascii=False)}])
         return resp.content[0].text.strip()
     except Exception:
         return None

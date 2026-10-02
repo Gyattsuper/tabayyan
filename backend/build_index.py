@@ -19,6 +19,7 @@ Output:    data/corpus.db      texts, references, gradings (SQLite)
 """
 import json
 import os
+import re
 import pickle
 import sqlite3
 from pathlib import Path
@@ -99,6 +100,12 @@ def grade_bucket(label: str) -> str:
     return label
 
 
+def clean(text: str) -> str:
+    """A few texts in the dataset contain HTML line breaks or tags."""
+    text = re.sub(r"<br\s*/?>", " ", text or "")
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", text)).strip()
+
+
 def load(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
@@ -155,7 +162,7 @@ def build():
         ara = load(H / "editions" / f"ara-{key}.min.json")["hadiths"]
         eng = {h["hadithnumber"]: h for h in load(H / "editions" / f"eng-{key}.min.json")["hadiths"]}
         for h in ara:
-            text = h["text"].strip()
+            text = clean(h["text"])
             if not text:
                 continue
             en = eng.get(h["hadithnumber"], {})
@@ -171,8 +178,9 @@ def build():
                     grades_out.append({"scholar": SCHOLAR_AR.get(g["name"], g["name"]), "grade": ar,
                                        "scholar_en": g["name"], "grade_en": GRADE_EN.get(ar, g["grade"])})
             num = f"{h['hadithnumber']:g}" if isinstance(h["hadithnumber"], float) else f"{h['hadithnumber']}"
-            if en.get("text", "").strip():
-                en_records.append((len(records), "sunnah.com", en["text"]))
+            en_text = clean(en.get("text", ""))
+            if en_text:
+                en_records.append((len(records), "sunnah.com", en_text))
             records.append({
                 "type": "hadith",
                 "ref": f"{title}، رقم {num}",
@@ -180,7 +188,7 @@ def build():
                 "book": key,
                 "number": h["hadithnumber"],
                 "text": text,
-                "english": en.get("text", ""),
+                "english": en_text,
                 "grades": grades_out,
                 "norm": normalize(text),
             })

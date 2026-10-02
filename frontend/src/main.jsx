@@ -4,3 +4,8 @@ import App from "./App.jsx";
 import "./styles.css";
 
 createRoot(document.getElementById("root")).render(<App />);
+
+// Installable app: lets people share a message from WhatsApp straight to Tabayyan (Android).
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+}

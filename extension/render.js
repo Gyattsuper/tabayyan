@@ -14,6 +14,8 @@
       athar: "قول منسوب لغير النبي ﷺ", foundEn: "يطابق ترجمة معروفة", partialEn: "قريب من ترجمة معروفة",
       inText: "ما في النص", correct: "النص الصحيح", source: "النص في المصدر", open: "افتح المصدر",
       loading: "نبحث في القرآن الكريم وكتب الحديث…",
+      reading: "نقرأ النص من الصورة ثم نتحقق منه…",
+      fromImage: "النص الذي قرأناه من الصورة",
       netError: "تعذر الاتصال بخادم تبيّن. تأكد من عنوان الخادم في إعدادات الإضافة.",
       close: "إغلاق", result: "نتيجة تبيّن", name: "تبيّن",
       placeholder: "الصق آية أو حديثًا (بالعربية أو الإنجليزية)، أو حدّد نصًا في الصفحة قبل فتح الإضافة",
@@ -27,6 +29,8 @@
       partialEn: "Close to a known translation",
       inText: "In the text", correct: "Correct text", source: "Text in the source", open: "Open the source",
       loading: "Searching the Quran and the hadith collections…",
+      reading: "Reading the text in the image, then checking it…",
+      fromImage: "Text read from the image",
       netError: "Could not reach the Tabayyan server. Check the server address in the extension settings.",
       close: "Close", result: "Tabayyan result", name: "Tabayyan",
       placeholder: "Paste a verse or hadith (Arabic or English), or select text on the page before opening",
@@ -95,10 +99,13 @@
     .t-grades{font-size:13px;color:#5d6b82;margin:6px 0}.t-link{font-size:13px;color:#193565}`;
 
   function renderAll(data) {
+    const t = str(data.lang);
+    const head = data.transcript
+      ? `<p class="t-label" dir="${t.dir}">${t.fromImage}</p><p class="t-quote" dir="auto">${esc(data.transcript)}</p>` : "";
     if (!data.results.length) {
-      return `<p class="t-warn" dir="${str(data.lang).dir}" style="--bg:#fcebeb">${esc(data.message || "")}</p>`;
+      return head + `<p class="t-warn" dir="${t.dir}" style="--bg:#fcebeb">${esc(data.message || "")}</p>`;
     }
-    return data.results.map(render).join("");
+    return head + data.results.map(render).join("");
   }
 
   globalThis.TabayyanRender = { render, renderAll, CSS, esc, str };
