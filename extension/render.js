@@ -5,19 +5,49 @@
     String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const PUNCT = /^[\s‎‏"'“”«»:.,،؛]+$/;
 
-  function headline(r) {
+  // Interface text. Results themselves arrive from the server in the chosen language.
+  const STR = {
+    ar: {
+      dir: "rtl",
+      found: "موجود في المصادر", partial: "مطابق جزئيًا", not_found: "لم نجده في المصادر",
+      weak: "موجود لكنه ضعيف", disputed: "موجود ومختلف في درجته", misattributed: "موجود لكن نسبته خاطئة",
+      athar: "قول منسوب لغير النبي ﷺ", foundEn: "يطابق ترجمة معروفة", partialEn: "قريب من ترجمة معروفة",
+      inText: "ما في النص", correct: "النص الصحيح", source: "النص في المصدر", open: "افتح المصدر",
+      loading: "نبحث في القرآن الكريم وكتب الحديث…",
+      netError: "تعذر الاتصال بخادم تبيّن. تأكد من عنوان الخادم في إعدادات الإضافة.",
+      close: "إغلاق", result: "نتيجة تبيّن", name: "تبيّن",
+      placeholder: "الصق آية أو حديثًا (بالعربية أو الإنجليزية)، أو حدّد نصًا في الصفحة قبل فتح الإضافة",
+      check: "تحقّق", noFatwa: "لا يُصدر فتاوى.", settings: "الإعدادات",
+    },
+    en: {
+      dir: "ltr",
+      found: "Found in the sources", partial: "Partial match", not_found: "Not found in the sources",
+      weak: "Found, but graded weak", disputed: "Found, grading disputed", misattributed: "Found, but wrongly attributed",
+      athar: "Attributed to someone other than the Prophet ﷺ", foundEn: "Matches a known translation",
+      partialEn: "Close to a known translation",
+      inText: "In the text", correct: "Correct text", source: "Text in the source", open: "Open the source",
+      loading: "Searching the Quran and the hadith collections…",
+      netError: "Could not reach the Tabayyan server. Check the server address in the extension settings.",
+      close: "Close", result: "Tabayyan result", name: "Tabayyan",
+      placeholder: "Paste a verse or hadith (Arabic or English), or select text on the page before opening",
+      check: "Check", noFatwa: "Does not issue religious rulings.", settings: "Settings",
+    },
+  };
+  const str = (lang) => STR[lang === "en" ? "en" : "ar"];
+
+  function headline(r, t) {
     const m = r.match;
     if (r.verdict === "found" && m) {
-      if (m.grade_status === "weak") return ["موجود لكنه ضعيف", "missing"];
-      if (m.grade_status === "disputed") return ["موجود ومختلف في درجته", "partial"];
+      if (m.grade_status === "weak") return [t.weak, "missing"];
+      if (m.grade_status === "disputed") return [t.disputed, "partial"];
       if ((r.claimed === "hadith" && m.type === "quran") || (r.claimed === "quran" && m.type === "hadith")
           || (r.claimed === "athar" && m.type === "quran"))
-        return ["موجود لكن نسبته خاطئة", "partial"];
-      return ["موجود في المصادر", "found"];
+        return [t.misattributed, "partial"];
+      return [m.translator ? t.foundEn : t.found, "found"];
     }
-    if (r.verdict === "partial") return ["مطابق جزئيًا", "partial"];
-    if (r.claimed === "athar") return ["قول منسوب لغير النبي ﷺ", "scope"];
-    return ["لم نجده في المصادر", "missing"];
+    if (r.verdict === "partial") return [m && m.translator ? t.partialEn : t.partial, "partial"];
+    if (r.claimed === "athar") return [t.athar, "scope"];
+    return [t.not_found, "missing"];
   }
 
   function sourceText(words) {
@@ -31,39 +61,45 @@
   }
 
   function render(r) {
-    const [title, tone] = headline(r);
+    const t = str(r.lang);
+    const [title, tone] = headline(r, t);
     const m = r.match;
-    let html = `<div class="t-res tone-${tone}">
-      <div class="t-head"><strong>${esc(title)}</strong>${m ? `<span>${esc(m.ref)}</span>` : ""}</div>`;
+    const en = m && m.words_lang === "en";
+    let html = `<div class="t-res tone-${tone}" dir="${t.dir}">
+      <div class="t-head"><strong>${esc(title)}</strong>${m ? `<span>${esc(m.ref)}${m.translator ? ` · ${esc(m.translator)}` : ""}</span>` : ""}</div>`;
     if (r.explanation) html += `<p class="t-expl">${esc(r.explanation)}</p>`;
     for (const w of r.warnings) html += `<p class="t-warn">${esc(w)}</p>`;
     if (m) {
+      const d = en ? "ltr" : "rtl";
       if (r.verdict === "partial")
-        html += `<p class="t-label">ما في النص</p><p class="t-quote">${r.diff
-          .map((d) => (d.status === "same" ? esc(d.word) : `<s>${esc(d.word)}</s>`)).join(" ")}</p>`;
-      html += `<p class="t-label">${r.verdict === "partial" ? "النص الصحيح" : "النص في المصدر"}</p>
-        <p class="t-src">${sourceText(m.words)}</p>`;
+        html += `<p class="t-label">${t.inText}</p><p class="t-quote" dir="${d}">${r.diff
+          .map((x) => (x.status === "same" ? esc(x.word) : `<s>${esc(x.word)}</s>`)).join(" ")}</p>`;
+      html += `<p class="t-label">${r.verdict === "partial" ? t.correct : t.source}</p>
+        <p class="t-src${en ? " en" : ""}" dir="${d}">${sourceText(m.words)}</p>`;
       if (m.type === "hadith" && m.grades.length > 1)
-        html += `<p class="t-grades">${m.grades.map((g) => `${esc(g.scholar)}: <b>${esc(g.grade)}</b>`).join(" ، ")}</p>`;
-      html += `<a class="t-link" href="${esc(m.link)}" target="_blank" rel="noreferrer">افتح المصدر</a>`;
+        html += `<p class="t-grades">${m.grades.map((g) => `${esc(g.scholar)}: <b>${esc(g.grade)}</b>`).join(" , ")}</p>`;
+      html += `<a class="t-link" href="${esc(m.link)}" target="_blank" rel="noreferrer">${t.open}</a>`;
     }
     return html + "</div>";
   }
 
   const CSS = `
-    .t-res{font:15px/1.7 system-ui,"Segoe UI",Tahoma,sans-serif;color:#16233b;direction:rtl;text-align:right;border-inline-start:4px solid var(--tone);padding:4px 12px 8px;margin-top:10px}
+    .t-res{font:15px/1.7 system-ui,"Segoe UI",Tahoma,sans-serif;color:#16233b;text-align:start;border-inline-start:4px solid var(--tone);padding:4px 12px 8px;margin-top:10px}
     .tone-found{--tone:#16875b;--bg:#e7f6ef}.tone-partial{--tone:#a86b00;--bg:#fdf3e0}.tone-missing{--tone:#c23b3b;--bg:#fcebeb}.tone-scope{--tone:#193565;--bg:#e8eef8}
     .t-head{display:flex;flex-direction:column}.t-head strong{color:var(--tone);font-size:18px}.t-head span{font-size:14px}
     .t-expl{margin:8px 0}.t-warn{background:var(--bg);padding:6px 10px;border-radius:6px;margin:6px 0;font-size:14px}
     .t-label{margin:10px 0 2px;font-size:12px;color:#5d6b82}.t-quote{margin:0}.t-quote s{color:#c23b3b}
     .t-src{margin:0;font-family:"Amiri","Traditional Arabic","Noto Naskh Arabic",serif;font-size:20px;line-height:2}
+    .t-src.en{font-family:Georgia,serif;font-size:16px;line-height:1.7}
     .t-src .ctx{color:#9aa6b8}.t-src .fix{background:linear-gradient(transparent 55%,rgba(48,208,200,.45) 55%);font-weight:700}
     .t-grades{font-size:13px;color:#5d6b82;margin:6px 0}.t-link{font-size:13px;color:#193565}`;
 
   function renderAll(data) {
-    if (!data.results.length) return `<p class="t-warn" style="--bg:#fcebeb">${esc(data.message || "")}</p>`;
+    if (!data.results.length) {
+      return `<p class="t-warn" dir="${str(data.lang).dir}" style="--bg:#fcebeb">${esc(data.message || "")}</p>`;
+    }
     return data.results.map(render).join("");
   }
 
-  globalThis.TabayyanRender = { render, renderAll, CSS, esc };
+  globalThis.TabayyanRender = { render, renderAll, CSS, esc, str };
 })();

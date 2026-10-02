@@ -2,7 +2,7 @@
 
 Two levels of testing:
 
-1. `python tests/run_tests.py`: 17 hand-written cases covering each behavior (all passing).
+1. `python tests/run_tests.py`: 22 hand-written cases covering each behavior (all passing).
 2. `python eval/run_eval.py <seed>`: a larger generated evaluation that compares Tabayyan with plain
    text search. Results below.
 

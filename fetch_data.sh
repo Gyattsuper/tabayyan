@@ -13,7 +13,8 @@ fi
 if [ ! -d quran-api ]; then
   git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fawazahmed0/quran-api.git
   (cd quran-api && git sparse-checkout set --no-cone '/info.min.json' '/editions.min.json' \
-    '/editions/ara-quransimple.min.json' '/editions/ara-quranuthmanihaf.min.json' '/editions/eng-ummmuhammad.min.json')
+    '/editions/ara-quransimple.min.json' '/editions/ara-quranuthmanihaf.min.json' \
+    $(for t in ummmuhammad abdullahyusufal mohammedmarmadu muhammadtaqiudd; do echo "/editions/eng-$t.min.json"; done))
 fi
 
 cd ../backend && python3 build_index.py

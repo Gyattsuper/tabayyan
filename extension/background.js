@@ -1,9 +1,9 @@
-import { checkText } from "./config.js";
+import { checkText, getLang } from "./config.js";
 
 const MENU_ID = "tabayyan-check";
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({ id: MENU_ID, title: "تحقّق مع تبيّن", contexts: ["selection"] });
+  chrome.contextMenus.create({ id: MENU_ID, title: "تحقّق مع تبيّن | Check with Tabayyan", contexts: ["selection"] });
 });
 
 async function run(tabId, fn, args = []) {
@@ -18,13 +18,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   } catch {
     return; // pages like chrome:// don't allow scripts; the popup still works there
   }
-  await run(tab.id, () => globalThis.TabayyanPanel.loading());
+  const lang = await getLang();
+  await run(tab.id, (l) => globalThis.TabayyanPanel.loading(l), [lang]);
   try {
-    const data = await checkText(text);
+    const data = await checkText(text, lang);
     await run(tab.id, (d) => globalThis.TabayyanPanel.show(d), [data]);
   } catch {
-    await run(tab.id, (m) => globalThis.TabayyanPanel.error(m), [
-      "تعذر الاتصال بخادم تبيّن. تأكد من عنوان الخادم في إعدادات الإضافة.",
-    ]);
+    await run(tab.id, (l) => globalThis.TabayyanPanel.error(l), [lang]);
   }
 });

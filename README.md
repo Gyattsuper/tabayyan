@@ -11,8 +11,14 @@ verse or hadith in it, searches the Quran and nine major hadith collections, and
 - **مطابق جزئيًا / Partial match**: the text exists but the wording was changed; the changed words are highlighted next to the correct text
 - **غير موجود / Not found**: not in the indexed sources; the user is referred to scholars
 
-It also warns when a verse is quoted as a hadith (or the reverse), and when a hadith exists but was graded weak.
+It also warns when a verse is quoted as a hadith (or the reverse), when a hadith exists but was graded weak,
+and when a saying is attributed to a companion or scholar (outside what it searches, so it does not judge it).
 The verdict always comes from the source data, never from a language model's memory. The tool does not issue fatwas.
+
+**Arabic and English.** The interface and results can be switched between Arabic and English. Quotes can be
+in either language: English quotes are compared with four well-known English translations of the Quran
+(Saheeh International, Yusuf Ali, Pickthall, Hilali and Khan) and the sunnah.com hadith translations. A
+partial match in English may just be a different translation, and the result says so.
 
 ## How it works
 
@@ -24,12 +30,13 @@ message ──► extract quote ──► search ──► align ──► verdi
 ```
 
 - `backend/arabic.py`: normalization (diacritics, hamza and alef forms, taa marbuta, honorifics)
-- `backend/matcher.py`: two-stage search; "found" requires every meaningful word to match
-- `backend/verify.py`: builds results, word diffs, gradings, warnings
+- `backend/english.py`: English normalization (punctuation, honorifics, translator insertions in brackets)
+- `backend/matcher.py`: two-stage search (Arabic text, or English translations); "found" requires every meaningful word to match
+- `backend/verify.py`: builds results in Arabic or English, word diffs, gradings, warnings
 - `backend/ai.py`: Claude API for extraction and explanations, with guards and fallback
 - `backend/api.py`: FastAPI server, also serves the web app
 - `frontend/`: React web app
-- `extension/`: Chrome extension (right-click "تحقّق مع تبيّن", or the toolbar popup)
+- `extension/`: Chrome extension (right-click "تحقّق مع تبيّن", or the toolbar popup), Arabic or English
 
 Sources and licenses: `SOURCES.md`. Test plan: `TESTING.md`.
 
@@ -45,7 +52,7 @@ correct. Details and limits: `TESTING.md`.
 ```bash
 pip install -r requirements.txt
 ./fetch_data.sh                      # downloads the datasets and builds the index (about 1.5 min)
-python tests/run_tests.py            # 17 cases
+python tests/run_tests.py            # 22 cases
 cd frontend && npm install && npm run build && cd ..
 cd backend && uvicorn api:app --port 8000
 # open http://localhost:8000
@@ -53,6 +60,7 @@ cd backend && uvicorn api:app --port 8000
 
 Optional: `export ANTHROPIC_API_KEY=...` before starting the server to enable Claude extraction
 and explanations. Without it, the app uses rule-based extraction and template explanations.
+The model is Claude Sonnet 5.5 by default (`TABAYYAN_MODEL` to change it).
 
 ## Deploy (live demo)
 

@@ -89,5 +89,34 @@
   "text": "قال تعالى: المسلم من سلم المسلمون من لسانه ويده",
   "expect": "found",
   "ref_contains": "البخاري"
+ },
+ {
+  "name": "آية بالإنجليزية (صحيح إنترناشونال)",
+  "text": "And I did not create the jinn and mankind except to worship Me",
+  "expect": "found",
+  "ref_contains": "الذاريات"
+ },
+ {
+  "name": "آية بالإنجليزية بترجمة أخرى (بكثال)",
+  "text": "I created the jinn and humankind only that they might worship Me",
+  "expect": "found",
+  "ref_contains": "الذاريات"
+ },
+ {
+  "name": "آية بالإنجليزية بكلمة محرفة",
+  "text": "And I did not create the jinn and mankind except to obey Me",
+  "expect": "partial",
+  "ref_contains": "الذاريات"
+ },
+ {
+  "name": "حديث بالإنجليزية",
+  "text": "The Prophet (ﷺ) said: The reward of deeds depends upon the intentions",
+  "expect": "found",
+  "ref_contains": "البخاري"
+ },
+ {
+  "name": "قول مكذوب بالإنجليزية",
+  "text": "The Prophet said: Seek knowledge even if you have to go to China",
+  "expect": "not_found"
  }
 ]

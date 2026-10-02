@@ -12,8 +12,18 @@ import json
 import os
 
 from arabic import normalize
+from english import normalize_en
 
-MODEL = os.environ.get("TABAYYAN_MODEL", "claude-haiku-4-5-20251001")
+
+def _appears(quote: str, message: str) -> bool:
+    """The quote occurs in the message (after normalization, in either script)."""
+    for norm in (normalize, normalize_en):
+        q = norm(quote)
+        if q and q in norm(message):
+            return True
+    return False
+
+MODEL = os.environ.get("TABAYYAN_MODEL", "claude-sonnet-5-5")
 
 _client = None
 
@@ -63,11 +73,10 @@ def extract_quotes(message: str) -> list[dict] | None:
         return None
 
     # Guard: keep only quotes that really appear in the message.
-    msg = normalize(message)
     out = []
     for q in quotes:
         t = str(q.get("text", "")).strip()
-        if t and normalize(t) and normalize(t) in msg:
+        if t and _appears(t, message):
             claimed = q.get("claimed")
             claimed = {"hadith": "hadith", "quran": "quran", "other": "athar"}.get(claimed)
             out.append({"text": t, "claimed": claimed})
@@ -89,6 +98,8 @@ Rules:
   sayings are often reported elsewhere, and that this result does not judge the attribution.
 - If the only grading's "scholar" is the collection itself (صحيح البخاري or صحيح مسلم), do not say a person graded it. Say it is in that Sahih, whose hadiths are accepted as authentic.
 - Do not use digits except the reference number exactly as given.
+- If "translator" is set, the quote was compared with that English translation. A partial match may
+  just be a different translation, so say that instead of calling the quote altered.
 - No greetings, no markdown."""
 
 
@@ -101,8 +112,9 @@ def explain(result: dict, lang: str = "ar") -> str | None:
         "checked_text": result["quote"],
         "claimed_as": result.get("claimed"),
         "source": result.get("match") and {
-            k: result["match"].get(k) for k in ("type", "ref", "grades", "grade_summary")
+            k: result["match"].get(k) for k in ("type", "ref", "translator", "grades", "grade_summary")
         },
+        "quote_language": result.get("quote_lang"),
         "changed_words": [d["word"] for d in (result.get("diff") or []) if d["status"] != "same"],
         "warnings": result.get("warnings", []),
     }

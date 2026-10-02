@@ -8,6 +8,9 @@ Stage 2 (precision): for each candidate, align the quote to the most
 similar span of its text. That span is what we show as the "correct text",
 and its similarity decides the verdict.
 
+English quotes are matched the same way against English translations (four
+of the Quran, one of the hadiths), with a word-level index for stage 1.
+
 Memory: the index is built ahead of time by build_index.py. At runtime only
 the sparse index sits in memory; texts are read from SQLite for the few
 candidates of each query, which keeps the server within free hosting limits.
@@ -25,6 +28,7 @@ from rapidfuzz import fuzz
 from scipy import sparse
 
 from arabic import normalize
+from english import STOPWORDS_EN, is_english, normalize_en
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 
@@ -42,19 +46,19 @@ STOPWORDS = set(normalize(
 ).split())
 
 
-def content_words(text: str) -> list[str]:
-    return [w for w in text.split() if w not in STOPWORDS and len(w) > 1]
+def content_words(text: str, stop: set = STOPWORDS) -> list[str]:
+    return [w for w in text.split() if w not in stop and len(w) > 1]
 
 
-def coverage(q: str, span: str) -> float:
+def coverage(q: str, span: str, stop: set = STOPWORDS) -> float:
     """Share of the quote's content words found exactly in the matched span."""
-    qw = content_words(q)
-    return shared_words(q, span) / len(qw) if qw else 0.0
+    qw = content_words(q, stop)
+    return shared_words(q, span, stop) / len(qw) if qw else 0.0
 
 
-def shared_words(q: str, span: str) -> int:
+def shared_words(q: str, span: str, stop: set = STOPWORDS) -> int:
     sw = set(span.split())
-    return sum(w in sw for w in content_words(q))
+    return sum(w in sw for w in content_words(q, stop))
 
 
 @dataclass
@@ -65,6 +69,7 @@ class Match:
     coverage: float = 0.0  # share of the quote's content words present in the span
     exact: bool = False    # every word of the quote matches the source in order, nothing changed or skipped
     shared: int = 0        # number of the quote's content words present in the span
+    english: bool = False  # matched against an English translation (record has translator, en_text, en_norm)
 
 
 def is_exact(q: str, span: str) -> bool:
@@ -89,6 +94,7 @@ def is_exact(q: str, span: str) -> bool:
 
 # When the same text appears in several places, cite the strongest source first.
 BOOK_PRIORITY = ["bukhari", "muslim", "abudawud", "tirmidhi", "nasai", "ibnmajah", "malik", "nawawi", "qudsi"]
+TRANSLATOR_PRIORITY = ["Saheeh International", "Yusuf Ali", "Pickthall", "Hilali and Khan", "sunnah.com"]
 
 
 def _rank_key(m: "Match"):
@@ -98,7 +104,8 @@ def _rank_key(m: "Match"):
         source = (2, -len(r["norm"]))
     else:
         source = (1, -BOOK_PRIORITY.index(r["book"]))
-    return (m.exact, round(m.score), m.coverage, source)
+    translator = -TRANSLATOR_PRIORITY.index(r["translator"]) if m.english else 0
+    return (m.exact, round(m.score), m.coverage, source, translator)
 
 
 class Matcher:
@@ -110,19 +117,32 @@ class Matcher:
         self.count = self.matrix.shape[0]
         self.db = sqlite3.connect(data_dir / "corpus.db", check_same_thread=False)
         self.db.row_factory = sqlite3.Row
+        with open(data_dir / "en_vectorizer.pkl", "rb") as f:
+            self.en_vec = pickle.load(f)
+        self.en_matrix = sparse.load_npz(data_dir / "en_tfidf.npz").tocsr()
+        self.en_types = np.load(data_dir / "en_types.npy")
+
+    @staticmethod
+    def _row(row) -> dict:
+        r = dict(row)
+        r["grades"] = json.loads(r["grades"] or "[]")
+        if r["ayah_end"] is None:
+            del r["ayah_end"]
+        return r
 
     def fetch(self, ids: list[int]) -> dict[int, dict]:
         rows = self.db.execute(
             f"SELECT * FROM records WHERE id IN ({','.join('?' * len(ids))})", [int(i) for i in ids]
         ).fetchall()
-        out = {}
-        for row in rows:
-            r = dict(row)
-            r["grades"] = json.loads(r["grades"] or "[]")
-            if r["ayah_end"] is None:
-                del r["ayah_end"]
-            out[r["id"]] = r
-        return out
+        return {r["id"]: r for r in map(self._row, rows)}
+
+    def fetch_en(self, ids: list[int]) -> dict[int, dict]:
+        """English translation rows, each joined with the Arabic record it translates."""
+        rows = self.db.execute(
+            f"SELECT e.id AS en_id, e.translator, e.en_text, e.en_norm, r.* FROM en_records e "
+            f"JOIN records r ON r.id = e.record_id WHERE e.id IN ({','.join('?' * len(ids))})", [int(i) for i in ids]
+        ).fetchall()
+        return {r["en_id"]: r for r in map(self._row, rows)}
 
     @staticmethod
     def _best_span(q: str, doc: str) -> tuple[float, str]:
@@ -137,26 +157,46 @@ class Matcher:
             end += 1
         span = doc[start:end].strip()
         # Re-score on the snapped span so partial words don't inflate the score
-        return fuzz.ratio(q, span), span
+        score = fuzz.ratio(q, span)
+        # A short text (one verse) can be a better match as a whole than any window of it,
+        # e.g. when the quote changed a word at the very end.
+        if len(doc) <= 1.5 * len(q):
+            whole = fuzz.ratio(q, doc)
+            if whole > score:
+                return whole, doc
+        return score, span
 
     def search(self, text: str, kind: str | None = None, k: int = 40, top: int = 3) -> list[Match]:
-        q = normalize(text)
-        q_words = q.split()
-        if len(q_words) < MIN_WORDS:
+        english = is_english(text)
+        if english:
+            q, vec, matrix, types, fetch, field, stop = (normalize_en(text), self.en_vec, self.en_matrix,
+                                                         self.en_types, self.fetch_en, "en_norm", STOPWORDS_EN)
+        else:
+            q, vec, matrix, types, fetch, field, stop = (normalize(text), self.vec, self.matrix,
+                                                         self.types, self.fetch, "norm", STOPWORDS)
+        if len(q.split()) < MIN_WORDS:
             return []
-        sims = (self.matrix @ self.vec.transform([q]).T).toarray().ravel()
+        sims = (matrix @ vec.transform([q]).T).toarray().ravel()
         if kind:
-            sims[self.types != (0 if kind == "quran" else 1)] = -1
+            sims[types != (0 if kind == "quran" else 1)] = -1
+        k = min(k * (2 if english else 1), len(sims) - 1)
         cands = np.argpartition(-sims, k)[:k]
-        records = self.fetch(list(cands))
+        records = fetch(list(cands))
         results = []
         for i in cands:
             r = records[int(i)]
-            score, span = self._best_span(q, r["norm"])
+            score, span = self._best_span(q, r[field])
             if score >= PARTIAL - 15:
-                results.append(Match(r, score, span, coverage(q, span), is_exact(q, span), shared_words(q, span)))
+                results.append(Match(r, score, span, coverage(q, span, stop), is_exact(q, span),
+                                     shared_words(q, span, stop), english))
         results.sort(key=_rank_key, reverse=True)
-        return results[:top]
+        # The same verse can match through several translations; keep its best one.
+        seen, out = set(), []
+        for m in results:
+            if m.record["id"] not in seen:
+                seen.add(m.record["id"])
+                out.append(m)
+        return out[:top]
 
 
 def verdict(matches: list[Match]) -> str:

@@ -319,3 +319,37 @@ dd.g-weak { color: var(--missing); }
   .result { animation: settle 0.35s ease-out; }
   @keyframes settle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 }
+
+/* ---------- language switch and English text ---------- */
+.brand { flex: 1; }
+.lang select {
+  font-family: var(--ui);
+  font-size: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.lang select option { color: var(--ink); background: #fff; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+[dir="ltr"] .band::after { left: auto; right: -90px; }
+.ayah-meaning { font-size: 15px; font-style: italic; color: #dbe5f5; }
+.translator { font-weight: 400; color: var(--muted); }
+.source-text.en, .quote-line.en {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  line-height: 1.8;
+  text-align: left;
+}
+.original { margin-top: 10px; }
+.original summary { cursor: pointer; color: var(--muted); font-size: 15px; }
+.original .source-text { font-size: 21px; text-align: right; }

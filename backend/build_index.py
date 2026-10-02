@@ -7,12 +7,18 @@ Sources (see SOURCES.md):
   - Hadith: fawazahmed0/hadith-api (sunnah.com data), Arabic + English,
     with gradings by named scholars.
 
+  - English: four English translations of the Quran (see SOURCES.md) and the
+    sunnah.com English translation of the hadiths, so English quotes can be
+    checked too.
+
 Run once:  python build_index.py
 Output:    data/corpus.db      texts, references, gradings (SQLite)
-           data/tfidf.npz      search index (float32 sparse matrix)
+           data/tfidf.npz      Arabic search index (float32 sparse matrix)
            data/vectorizer.pkl, data/types.npy
+           data/en_tfidf.npz   English search index (word level), en_vectorizer.pkl, en_types.npy
 """
 import json
+import os
 import pickle
 import sqlite3
 from pathlib import Path
@@ -22,12 +28,34 @@ from scipy import sparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from arabic import normalize
+from english import normalize_en
 from surahs import SURAH
 
 ROOT = Path(__file__).resolve().parent.parent
 Q = ROOT / "data" / "quran-api"
 H = ROOT / "data" / "hadith-api"
-DATA = ROOT / "data"
+DATA = Path(os.environ.get("TABAYYAN_DATA_OUT", ROOT / "data"))
+
+BOOKS_EN = {
+    "bukhari": "Sahih al-Bukhari",
+    "muslim": "Sahih Muslim",
+    "abudawud": "Sunan Abi Dawud",
+    "tirmidhi": "Jami at-Tirmidhi",
+    "nasai": "Sunan an-Nasai",
+    "ibnmajah": "Sunan Ibn Majah",
+    "malik": "Muwatta Malik",
+    "nawawi": "40 Hadith Nawawi",
+    "qudsi": "40 Hadith Qudsi",
+}
+# English Quran translations indexed for English quotes (file name -> translator)
+QURAN_EN = {
+    "ummmuhammad": "Saheeh International",
+    "abdullahyusufal": "Yusuf Ali",
+    "mohammedmarmadu": "Pickthall",
+    "muhammadtaqiudd": "Hilali and Khan",
+}
+GRADE_EN = {"صحيح": "Sahih", "حسن": "Hasan", "ضعيف": "Daif", "موضوع": "Mawdu", "منكر": "Munkar",
+            "شاذ": "Shadh", "باطل": "Batil", "مرسل": "Mursal", "مقطوع": "Maqtu", "موقوف": "Mawquf"}
 
 BOOKS = {
     "bukhari": "صحيح البخاري",
@@ -54,6 +82,10 @@ SCHOLAR_AR = {
     "Muhammad Muhyi Al-Din Abdul Hamid": "محيي الدين عبد الحميد",
     "Darussalam": "دار السلام",
     "Ahmad Muhammad Shakir": "أحمد شاكر",
+    "Bashar Awad Maarouf": "بشار عواد معروف",
+    "Abu Ghuddah": "عبد الفتاح أبو غدة",
+    "Muhammad Fouad Abd al-Baqi": "محمد فؤاد عبد الباقي",
+    "Salim al-Hilali": "سليم الهلالي",
 }
 
 
@@ -74,14 +106,20 @@ def load(path):
 def build():
     records = []
 
+    en_records = []  # (record index, translator, text)
     info = load(Q / "info.min.json")
     surah_name = SURAH  # standard names; the dataset's have inconsistent diacritics and hamzas
+    surah_en = {c["chapter"]: c["name"] for c in info["chapters"]}
     simple = load(Q / "editions" / "ara-quransimple.min.json")["quran"]
     english = load(Q / "editions" / "eng-ummmuhammad.min.json")["quran"]
-    for s, e in zip(simple, english):
+    translations = {name: load(Q / "editions" / f"eng-{key}.min.json")["quran"] for key, name in QURAN_EN.items()}
+    for idx, (s, e) in enumerate(zip(simple, english)):
+        for name, verses in translations.items():
+            en_records.append((len(records), name, verses[idx]["text"]))
         records.append({
             "type": "quran",
             "ref": f"{surah_name[s['chapter']]}، آية {s['verse']}",
+            "ref_en": f"Surah {surah_en[s['chapter']]} {s['chapter']}:{s['verse']}",
             "surah": s["chapter"],
             "ayah": s["verse"],
             "text": s["text"],
@@ -99,9 +137,12 @@ def build():
                 continue
             c = run[0][0]["chapter"]
             a, b = run[0][0]["verse"], run[-1][0]["verse"]
+            for name, verses in translations.items():
+                en_records.append((len(records), name, " ".join(v["text"] for v in verses[i:i + size])))
             records.append({
                 "type": "quran",
                 "ref": f"{surah_name[c]}، الآيات {a}-{b}",
+                "ref_en": f"Surah {surah_en[c]} {c}:{a}-{b}",
                 "surah": c,
                 "ayah": a,
                 "ayah_end": b,
@@ -120,16 +161,22 @@ def build():
             en = eng.get(h["hadithnumber"], {})
             grades = h.get("grades") or en.get("grades") or []
             if key in SAHIHAYN:
-                grades_out = [{"scholar": title, "grade": "صحيح"}]
+                grades_out = [{"scholar": title, "grade": "صحيح", "scholar_en": BOOKS_EN[key], "grade_en": "Sahih"}]
             else:
-                grades_out = [
-                    {"scholar": SCHOLAR_AR.get(g["name"], g["name"]), "grade": grade_bucket(g["grade"])}
-                    for g in grades
-                    if g.get("grade", "").strip() not in ("", "-")
-                ]
+                grades_out = []
+                for g in grades:
+                    if g.get("grade", "").strip() in ("", "-"):
+                        continue
+                    ar = grade_bucket(g["grade"])
+                    grades_out.append({"scholar": SCHOLAR_AR.get(g["name"], g["name"]), "grade": ar,
+                                       "scholar_en": g["name"], "grade_en": GRADE_EN.get(ar, g["grade"])})
+            num = f"{h['hadithnumber']:g}" if isinstance(h["hadithnumber"], float) else f"{h['hadithnumber']}"
+            if en.get("text", "").strip():
+                en_records.append((len(records), "sunnah.com", en["text"]))
             records.append({
                 "type": "hadith",
-                "ref": f"{title}، رقم {h['hadithnumber']:g}" if isinstance(h["hadithnumber"], float) else f"{title}، رقم {h['hadithnumber']}",
+                "ref": f"{title}، رقم {num}",
+                "ref_en": f"{BOOKS_EN[key]} {num}",
                 "book": key,
                 "number": h["hadithnumber"],
                 "text": text,
@@ -138,25 +185,42 @@ def build():
                 "norm": normalize(text),
             })
 
-    write(records)
+    write(records, en_records)
     nq = sum(r["type"] == "quran" for r in records)
-    print(f"{nq} verse records, {len(records) - nq} hadiths -> {DATA}")
+    print(f"{nq} verse records, {len(records) - nq} hadiths, {len(en_records)} English texts -> {DATA}")
 
 
-def write(records):
+def write(records, en_records):
+    DATA.mkdir(parents=True, exist_ok=True)
     db_path = DATA / "corpus.db"
     db_path.unlink(missing_ok=True)
     db = sqlite3.connect(db_path)
     db.execute("""CREATE TABLE records (id INTEGER PRIMARY KEY, type TEXT, ref TEXT, book TEXT,
                   number REAL, surah INTEGER, ayah INTEGER, ayah_end INTEGER,
-                  text TEXT, english TEXT, grades TEXT, norm TEXT)""")
+                  text TEXT, english TEXT, grades TEXT, norm TEXT, ref_en TEXT)""")
     db.executemany(
-        "INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
         [(i, r["type"], r["ref"], r.get("book"), r.get("number"), r.get("surah"), r.get("ayah"),
           r.get("ayah_end"), r["text"], r.get("english", ""), json.dumps(r.get("grades", []), ensure_ascii=False),
-          r["norm"]) for i, r in enumerate(records)])
+          r["norm"], r["ref_en"]) for i, r in enumerate(records)])
+    db.execute("""CREATE TABLE en_records (id INTEGER PRIMARY KEY, record_id INTEGER, translator TEXT,
+                  en_text TEXT, en_norm TEXT)""")
+    en_norms = [normalize_en(t) for _, _, t in en_records]
+    db.executemany("INSERT INTO en_records VALUES (?,?,?,?,?)",
+                   [(i, rid, name, t, n) for i, ((rid, name, t), n) in enumerate(zip(en_records, en_norms))])
     db.commit()
     db.close()
+
+    # English: word-level index (character n-grams over long English texts would not fit in memory).
+    en_vec = TfidfVectorizer(analyzer="word", ngram_range=(1, 1), sublinear_tf=True, min_df=2,
+                             token_pattern=r"[a-z0-9]+", dtype=np.float32)
+    en_matrix = en_vec.fit_transform(en_norms).astype(np.float32)
+    en_vec.stop_words_ = None
+    sparse.save_npz(DATA / "en_tfidf.npz", en_matrix)
+    with open(DATA / "en_vectorizer.pkl", "wb") as f:
+        pickle.dump(en_vec, f)
+    np.save(DATA / "en_types.npy", np.array([0 if records[rid]["type"] == "quran" else 1 for rid, _, _ in en_records],
+                                            dtype=np.int8))
 
     vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 4), sublinear_tf=True, min_df=2, dtype=np.float32)
     matrix = vec.fit_transform([r["norm"] for r in records]).astype(np.float32)

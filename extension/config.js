@@ -1,5 +1,5 @@
 // Shared settings for the extension.
-// After deploying the API, set the server address in the extension's options page.
+// The server address and language can be changed in the extension's options page.
 export const DEFAULT_API = "https://tabayyan.onrender.com";
 
 export async function apiBase() {
@@ -7,11 +7,20 @@ export async function apiBase() {
   return (api || DEFAULT_API).replace(/\/+$/, "");
 }
 
-export async function checkText(text) {
+export async function getLang() {
+  const { lang } = await chrome.storage.sync.get("lang");
+  return lang === "en" ? "en" : "ar";
+}
+
+export async function setLang(lang) {
+  await chrome.storage.sync.set({ lang: lang === "en" ? "en" : "ar" });
+}
+
+export async function checkText(text, lang) {
   const res = await fetch(`${await apiBase()}/api/check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, lang: "ar" }),
+    body: JSON.stringify({ text, lang: lang || (await getLang()) }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();

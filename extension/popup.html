@@ -6,7 +6,9 @@
     body { width: 380px; margin: 0; font: 14px/1.6 system-ui, "Segoe UI", Tahoma, sans-serif; color: #16233b; background: #f4f7fb; }
     header { background: #193565; color: #fff; display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
     header img { width: 28px; height: 28px; }
-    header h1 { margin: 0; font-size: 18px; }
+    header h1 { margin: 0; font-size: 18px; flex: 1; }
+    header select { font: 13px system-ui, sans-serif; color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.35); border-radius: 6px; padding: 2px 6px; }
+    header select option { color: #16233b; background: #fff; }
     main { padding: 12px; }
     textarea { width: 100%; box-sizing: border-box; min-height: 90px; padding: 8px 10px; border: 1.5px solid #dde4ee; border-radius: 8px; font: inherit; resize: vertical; }
     textarea:focus { outline: none; border-color: #40a8e0; }
@@ -21,13 +23,15 @@
   </style>
 </head>
 <body>
-  <header><img src="icons/48.png" alt="" /><h1>تبيّن</h1></header>
+  <header><img src="icons/48.png" alt="" /><h1 id="name">تبيّن</h1>
+    <select id="lang" aria-label="Language / اللغة"><option value="ar">العربية</option><option value="en">English</option></select>
+  </header>
   <main>
-    <textarea id="text" placeholder="الصق آية أو حديثًا، أو حدّد نصًا في الصفحة قبل فتح الإضافة"></textarea>
+    <textarea id="text" dir="auto" placeholder="الصق آية أو حديثًا، أو حدّد نصًا في الصفحة قبل فتح الإضافة"></textarea>
     <button id="go">تحقّق</button>
     <div id="out"></div>
   </main>
-  <footer>لا يُصدر فتاوى. <a href="options.html" target="_blank">الإعدادات</a></footer>
+  <footer><span id="nofatwa">لا يُصدر فتاوى.</span> <a id="settings" href="options.html" target="_blank">الإعدادات</a></footer>
   <script src="render.js"></script>
   <script type="module" src="popup.js"></script>
 </body>

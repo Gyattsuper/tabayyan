@@ -1,9 +1,12 @@
-import { DEFAULT_API, apiBase } from "./config.js";
+import { DEFAULT_API, apiBase, getLang, setLang } from "./config.js";
 
 const input = document.getElementById("api");
 const status = document.getElementById("status");
+const langSel = document.getElementById("lang");
 
 apiBase().then((v) => (input.value = v));
+getLang().then((l) => (langSel.value = l));
+langSel.addEventListener("change", () => setLang(langSel.value));
 
 document.getElementById("save").addEventListener("click", async () => {
   const value = input.value.trim().replace(/\/+$/, "") || DEFAULT_API;
