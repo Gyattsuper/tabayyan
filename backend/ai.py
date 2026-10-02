@@ -72,9 +72,8 @@ def extract_quotes(message: str) -> list[dict] | None:
         return None
     try:
         resp = c.messages.create(
-            thinking={"type": "disabled"},  # short, focused tasks: answer directly
             model=MODEL,
-            max_tokens=600,
+            max_tokens=1200,
             system=EXTRACT_SYSTEM,
             messages=[{"role": "user", "content": message[:4000]}],
         )
@@ -133,9 +132,8 @@ def explain(result: dict, lang: str = "ar") -> str | None:
     }
     try:
         resp = c.messages.create(
-            thinking={"type": "disabled"},  # short, focused tasks: answer directly
             model=MODEL,
-            max_tokens=300,
+            max_tokens=800,
             system=EXPLAIN_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": json.dumps(facts, ensure_ascii=False)}],
         )
@@ -165,7 +163,6 @@ def transcribe_image(b64: str, media_type: str) -> str | None:
         return None
     try:
         resp = c.messages.create(
-            thinking={"type": "disabled"},  # short, focused tasks: answer directly
             model=MODEL,
             max_tokens=1500,
             system=TRANSCRIBE_SYSTEM,
@@ -215,8 +212,7 @@ def search_terms(text: str) -> dict | None:
     if c is None:
         return None
     try:
-        resp = c.messages.create(
-            thinking={"type": "disabled"},  # short, focused tasks: answer directlymodel=MODEL, max_tokens=300, system=SEARCH_TERMS_SYSTEM,
+        resp = c.messages.create(model=MODEL, max_tokens=800, system=SEARCH_TERMS_SYSTEM,
                                  messages=[{"role": "user", "content": text[:1000]}])
         d = _json(_text(resp))
         en = d.get("en", [])
@@ -236,8 +232,7 @@ def pick_alternatives(text: str, candidates: list[dict], lang: str) -> list[dict
         f"[{x['id']}] {x['ref']}\nArabic: {x['arabic'][:900]}\nEnglish: {x['english'][:500]}" for x in candidates)
     try:
         resp = c.messages.create(
-            thinking={"type": "disabled"},  # short, focused tasks: answer directly
-            model=MODEL, max_tokens=700,
+            model=MODEL, max_tokens=1500,
             system=PICK_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": f"Saying:\n{text[:1000]}\n\nCandidates:\n{listing}"}])
         return [p for p in _json(_text(resp)).get("picks", []) if isinstance(p, dict)]
@@ -268,8 +263,7 @@ def write_reply(facts: dict, lang: str) -> str | None:
         return None
     try:
         resp = c.messages.create(
-            thinking={"type": "disabled"},  # short, focused tasks: answer directly
-            model=MODEL, max_tokens=400,
+            model=MODEL, max_tokens=1000,
             system=REPLY_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": json.dumps(facts, ensure_ascii=False)}])
         return _text(resp).strip()
