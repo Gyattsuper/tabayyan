@@ -62,6 +62,19 @@ with sync_playwright() as p:
         record_video_size={"width": 1280, "height": 720})
     sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event("serviceworker", timeout=15000)
     ctx.add_init_script(OVERLAY)
+
+    # The two-hadith message is answered with the response captured from the live site
+    # (tabayyan.onrender.com, Claude enabled), since this workspace has no API key.
+    import json as _json
+    LIVE = (SP / "live_two.json").read_text(encoding="utf-8")
+
+    def _route(route, request):
+        if "صباح الخير" in (request.post_data or ""):
+            time.sleep(1.2)
+            route.fulfill(status=200, content_type="application/json", body=LIVE)
+        else:
+            route.continue_()
+    ctx.route("**/api/check", _route)
     pg = ctx.pages[0] if ctx.pages else ctx.new_page()
     T0 = time.time()
 
@@ -93,7 +106,7 @@ with sync_playwright() as p:
         else:
             move_to("#msg")
             pg.fill("#msg", "")
-            pg.type("#msg", text, delay=28)
+            pg.type("#msg", text, delay=14 if len(text) > 80 else 28)
             pg.wait_for_timeout(300)
             move_to("button[type=submit]")
         pg.wait_for_selector(".result")
@@ -102,14 +115,14 @@ with sync_playwright() as p:
     # 1. Opening
     pg.set_content(card_html([], big="تبيّن", small="تحدي الذكاء الاصطناعي في خدمة المحتوى الإسلامي").replace(
         '<div class="box"><h1>تبيّن</h1>', '<div class="box"><h1>تبيّن</h1><p class="sub">تحقّق من الآية أو الحديث قبل أن تنشره</p>'))
-    pg.wait_for_timeout(4200)
+    pg.wait_for_timeout(3500)
 
     # 2. Problem
     pg.set_content(card_html([
         "رسائل كثيرة تنتشر فيها أحاديث مكذوبة،",
         "وآيات تغيّرت كلماتها، وأقوال تُنسب إلى النبي ﷺ دون أصل.",
         "<span style='color:#30D0C8'>والتحقق منها يدويًا بطيء ويحتاج خبرة.</span>"]))
-    pg.wait_for_timeout(6500)
+    pg.wait_for_timeout(5500)
 
     # 3. App: fabricated quote
     pg.goto("http://localhost:8000/")
@@ -118,6 +131,15 @@ with sync_playwright() as p:
     check("انشروها تؤجروا 🌸 قال رسول الله ﷺ: «اطلبوا العلم ولو في الصين»")
     scroll_to(result_top() - 160)
     caption("قول مشهور لا أصل له في المصادر: يُنبَّه المستخدم ألا ينشره منسوبًا إلى النبي ﷺ", 6500)
+
+    # 3b. Claude extraction: two hadiths inside a chatty message
+    caption("")
+    check("صباح الخير 🌷 وصلني هذا وحبيت أشاركه، يقول الرسول عليه الصلاة والسلام: إن الدين يسر ولن يشاد الدين أحد إلا غلبه، وأيضا قال: تبسمك في وجه أخيك صدقة. لا تنسوا الدعاء لي 🤲")
+    scroll_to(result_top())
+    caption("رسالة فيها حديثان وسط تحية ودعاء: يستخرجهما Claude، والحكم من المصادر. الأول في صحيح البخاري", 5500)
+    second = pg.evaluate("() => document.querySelectorAll('.result')[1].getBoundingClientRect().top + window.scrollY - 20")
+    scroll_to(second)
+    caption("الثاني: سقطت منه كلمة «لك»، فيظهر النص الصحيح من جامع الترمذي", 5000)
 
     # 4. Altered verse
     caption("")
@@ -179,7 +201,7 @@ with sync_playwright() as p:
         "<span style='color:#AFC0DE;font-size:28px'>القرآن الكريم كاملًا، وتسعة من كتب الحديث بدرجات العلماء</span>",
         "<span style='color:#AFC0DE;font-size:28px'>دور النموذج: استخراج النص وشرح النتيجة فقط</span>",
         "<span style='color:#30D0C8'>لا يُصدر فتاوى، ويحيل إلى أهل العلم</span>"]))
-    pg.wait_for_timeout(7500)
+    pg.wait_for_timeout(5800)
 
     # 10. Closing
     pg.set_content(card_html(["<span class='sub' style='font-size:32px;color:#30D0C8'>تحقّق قبل أن تنشر</span>"], big="تبيّن",
