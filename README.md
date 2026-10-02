@@ -63,8 +63,11 @@ and explanations. Without it, the app uses rule-based extraction and template ex
 
 ## Chrome extension
 
-1. Open `chrome://extensions`, turn on Developer mode, click "Load unpacked", select `extension/`.
-2. Select text on any page, right-click, and choose "تحقّق مع تبيّن".
+The extension is not on the Chrome Web Store yet (publishing it is planned). For now it is installed from this repo:
+
+1. Download this repo (Code > Download ZIP) and unzip it.
+2. Open `chrome://extensions`, turn on Developer mode, click "Load unpacked", select `extension/`.
+3. Select text on any page, right-click, and choose "تحقّق مع تبيّن".
 
 ## Development history
 

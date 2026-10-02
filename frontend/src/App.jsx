@@ -245,6 +245,16 @@ export default function App() {
         <p>
           المصادر: نص القرآن من مشروع تنزيل، والأحاديث ودرجاتها من بيانات Sunnah.com.
         </p>
+        <p>
+          إضافة كروم: نسخة تجريبية تُثبَّت من المستودع، ولم تُنشر في متجر كروم بعد.{" "}
+          <a href="https://github.com/Gyattsuper/tabayyan#chrome-extension" target="_blank" rel="noreferrer">
+            طريقة التثبيت
+          </a>
+          {" · "}
+          <a href="https://github.com/Gyattsuper/tabayyan" target="_blank" rel="noreferrer">
+            الكود على GitHub
+          </a>
+        </p>
       </footer>
     </>
   );
