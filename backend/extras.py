@@ -56,9 +56,15 @@ def load_image(data: str | None, url: str | None) -> tuple[str, str] | None:
     if len(raw) > MAX_IMAGE_BYTES or not raw:
         return None
     # Trust the bytes, not the label.
-    sig = {b"\xff\xd8": "image/jpeg", b"\x89P": "image/png", b"RI": "image/webp", b"GI": "image/gif"}
-    media = sig.get(raw[:2], media)
-    if media not in IMAGE_TYPES:
+    if raw[:3] == b"\xff\xd8\xff":
+        media = "image/jpeg"
+    elif raw[:8] == b"\x89PNG\r\n\x1a\n":
+        media = "image/png"
+    elif raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+        media = "image/webp"
+    elif raw[:4] == b"GIF8":
+        media = "image/gif"
+    else:
         return None
     return base64.b64encode(raw).decode(), media
 

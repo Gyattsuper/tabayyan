@@ -3,6 +3,8 @@
 Two levels of testing:
 
 1. `python tests/run_tests.py`: 22 hand-written cases covering each behavior (all passing).
+   `python tests/run_feature_tests.py`: 14 checks for the guards, templates, image loading and
+   alternative retrieval (all passing). The AI-dependent parts were also tested on the live site.
 2. `python eval/run_eval.py [n_samples]`: a large generated evaluation that compares Tabayyan with
    plain text search, in Arabic and English. Results below.
 

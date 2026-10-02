@@ -72,6 +72,7 @@ Every number has a 95% confidence interval, and every miss is explained, in `TES
 pip install -r requirements.txt
 ./fetch_data.sh                      # downloads the datasets and builds the index (about 1.5 min)
 python tests/run_tests.py            # 22 cases
+python tests/run_feature_tests.py    # 14 checks for images, alternatives, replies
 cd frontend && npm install && npm run build && cd ..
 cd backend && uvicorn api:app --port 8000
 # open http://localhost:8000
