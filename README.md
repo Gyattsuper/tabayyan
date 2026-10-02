@@ -20,6 +20,19 @@ in either language: English quotes are compared with four well-known English tra
 (Saheeh International, Yusuf Ali, Pickthall, Hilali and Khan) and the sunnah.com hadith translations. A
 partial match in English may just be a different translation, and the result says so.
 
+**More than a checker:**
+
+- **Images:** upload, paste or drop a screenshot, or right-click an image with the extension. Claude reads the
+  text exactly as written (without correcting it), the text is shown to you, then checked like any message.
+- **Authentic alternatives:** for a text that is not found or graded weak, Tabayyan suggests authentic hadiths
+  or verses with a close meaning. They are retrieved from the sources; Claude only chooses among them and must
+  quote them exactly.
+- **A polite reply:** one tap drafts a kind correction you can send back to the group, with the source link,
+  and a WhatsApp button.
+- **Share from WhatsApp:** the site can be installed as an app on Android; then share any message to Tabayyan.
+- **Learn:** a hadith of the day from an-Nawawi's Forty, and short lessons on hadith gradings and on how to
+  spot a fabricated forwarded message.
+
 ## How it works
 
 ```
@@ -34,6 +47,7 @@ message ──► extract quote ──► search ──► align ──► verdi
 - `backend/matcher.py`: two-stage search (Arabic text, or English translations); "found" requires every meaningful word to match
 - `backend/verify.py`: builds results in Arabic or English, word diffs, gradings, warnings
 - `backend/ai.py`: Claude API for extraction and explanations, with guards and fallback
+- `backend/extras.py`: images, authentic alternatives, polite replies, hadith of the day
 - `backend/api.py`: FastAPI server, also serves the web app
 - `frontend/`: React web app
 - `extension/`: Chrome extension (right-click "تحقّق مع تبيّن", or the toolbar popup), Arabic or English
@@ -80,7 +94,8 @@ The extension is not on the Chrome Web Store yet (publishing it is planned). For
 
 1. Download this repo (Code > Download ZIP) and unzip it.
 2. Open `chrome://extensions`, turn on Developer mode, click "Load unpacked", select `extension/`.
-3. Select text on any page, right-click, and choose "تحقّق مع تبيّن".
+3. Select text on any page, right-click, and choose "تحقّق مع تبيّن". Or right-click an image and choose
+   "تحقّق من الصورة مع تبيّن".
 
 ## Development history
 

@@ -139,7 +139,9 @@ def link_for(r: dict) -> str:
     if r["type"] == "quran":
         return f"https://quran.com/{r['surah']}/{r['ayah']}"
     if r["book"] in SUNNAH_DIRECT:
-        return f"https://sunnah.com/{SUNNAH_DIRECT[r['book']]}:{r['number']}"
+        n = r["number"]
+        n = int(n) if isinstance(n, float) and n.is_integer() else n
+        return f"https://sunnah.com/{SUNNAH_DIRECT[r['book']]}:{n}"
     return f"https://sunnah.com/search?q={urlquote(' '.join(r['norm'].split()[:8]))}"
 
 

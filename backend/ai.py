@@ -12,7 +12,10 @@ naming a book or number not in the result is rejected. If the API is unavailable
 the app falls back to rules and templates (image reading and alternatives need it).
 """
 import json
+import logging
 import os
+
+log = logging.getLogger("tabayyan.ai")
 
 from arabic import normalize
 from english import normalize_en
@@ -73,6 +76,7 @@ def extract_quotes(message: str) -> list[dict] | None:
         raw = raw[raw.find("{"): raw.rfind("}") + 1]
         quotes = json.loads(raw).get("quotes", [])
     except Exception:
+        log.exception("Claude call failed")
         return None
 
     # Guard: keep only quotes that really appear in the message.
@@ -130,6 +134,7 @@ def explain(result: dict, lang: str = "ar") -> str | None:
         )
         return resp.content[0].text.strip()
     except Exception:
+        log.exception("Claude call failed")
         return None
 
 
@@ -164,6 +169,7 @@ def transcribe_image(b64: str, media_type: str) -> str | None:
         )
         return resp.content[0].text.strip()
     except Exception:
+        log.exception("Claude call failed")
         return None
 
 
@@ -208,6 +214,7 @@ def search_terms(text: str) -> dict | None:
         en = [str(x) for x in (en if isinstance(en, list) else [en]) if str(x).strip()][:4]
         return {"en": en, "ar": str(d.get("ar", ""))}
     except Exception:
+        log.exception("Claude call failed")
         return None
 
 
@@ -225,6 +232,7 @@ def pick_alternatives(text: str, candidates: list[dict], lang: str) -> list[dict
             messages=[{"role": "user", "content": f"Saying:\n{text[:1000]}\n\nCandidates:\n{listing}"}])
         return [p for p in _json(resp.content[0].text).get("picks", []) if isinstance(p, dict)]
     except Exception:
+        log.exception("Claude call failed")
         return None
 
 
@@ -255,4 +263,5 @@ def write_reply(facts: dict, lang: str) -> str | None:
             messages=[{"role": "user", "content": json.dumps(facts, ensure_ascii=False)}])
         return resp.content[0].text.strip()
     except Exception:
+        log.exception("Claude call failed")
         return None

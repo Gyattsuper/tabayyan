@@ -112,6 +112,15 @@ attribution. These are checked by hand in the web app; `tests/run_tests.py` cove
 - **Explanations:** rejected and replaced with a template if they name a book, or any number,
   that is not in the computed result. Tested with explanations citing the wrong book, a wrong
   number, and Musnad Ahmad (not indexed): all rejected.
+- **Reading images:** the model is told to copy text exactly and never correct a misquoted verse,
+  since a silent correction would hide the error. The text read from the image is always shown to
+  the user before the result, so they can compare it with the image.
+- **Authentic alternatives:** candidates are retrieved from the sources and filtered to verses and
+  hadiths graded sahih or hasan. The model may only pick from that list (by id), and its excerpt must
+  appear in the source text, otherwise the source text itself is shown. Its one-line reason is dropped
+  if it names a book or a number.
+- **Polite reply:** built only from the computed result; rejected (template used instead) if it names a
+  book or number that is not in the result.
 - **API unavailable:** rule-based extraction and template explanations take over; same verdicts.
 
 ## Known limits

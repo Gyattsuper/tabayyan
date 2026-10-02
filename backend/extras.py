@@ -8,6 +8,8 @@ import datetime
 import re
 import urllib.request
 
+import logging
+
 import numpy as np
 
 import ai
@@ -16,6 +18,7 @@ from english import normalize_en
 from matcher import Matcher
 from verify import grade_summary, link_for, names_unknown_book, ref_of
 
+log = logging.getLogger("tabayyan.extras")
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
@@ -216,6 +219,8 @@ def reply(result: dict, alternative: dict | None, lang: str) -> dict:
                                      alternative and alternative.get("excerpt"), f.get("correct_text")) if x)
     if text and _clean(text, refs):
         return {"reply": text, "source": "claude"}
+    if text:
+        log.warning("reply rejected by guard: %r | refs: %r", text[:300], refs[:300])
     return {"reply": template_reply(f, lang), "source": "template"}
 
 
