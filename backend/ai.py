@@ -82,6 +82,8 @@ Rules:
 - For "not_found": say the text was not found in the searched collections, that this alone does not prove it is fabricated, and suggest asking a qualified scholar before sharing it.
 - For "partial": point out which words differ from the source.
 - If gradings differ between scholars, say so without choosing between them.
+- If the only grading's "scholar" is the collection itself (صحيح البخاري or صحيح مسلم), do not say a person graded it. Say it is in that Sahih, whose hadiths are accepted as authentic.
+- Do not use digits except the reference number exactly as given.
 - No greetings, no markdown."""
 
 
