@@ -140,7 +140,15 @@ with sync_playwright() as p:
         args=[f"--disable-extensions-except={EXT}", f"--load-extension={EXT}", "--window-size=1280,859"],
         no_viewport=True, record_video_dir=str(OUT),
         record_video_size={"width": 1280, "height": 720})
-    sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event("serviceworker", timeout=15000)
+    def ext_worker():
+        for w in ctx.service_workers:
+            if w.url.startswith("chrome-extension://"):
+                return w
+        return ctx.wait_for_event("serviceworker", predicate=lambda w: w.url.startswith("chrome-extension://"),
+                                  timeout=15000)
+    sw = ext_worker()
+    T_START = time.time()
+    print("extension worker:", sw.url)
     ctx.add_init_script(OVERLAY)
     ctx.route("**/api/**", on_api)
     pg = ctx.pages[0] if ctx.pages else ctx.new_page()
@@ -155,7 +163,8 @@ with sync_playwright() as p:
     def caption(text, wait=0):
         pg.evaluate("""t => { const c=document.getElementById('__cap'); if(!c) return;
             if(!t){c.style.opacity=0;return;}
-            c.style.left = document.querySelector('.side') ? 'calc(50% - 138px)' : '50%';
+            const side = document.querySelector('.side') && innerWidth > 900;
+            c.style.left = !side ? '50%' : (document.documentElement.dir === 'ltr' ? 'calc(50% + 138px)' : 'calc(50% - 138px)');
             c.textContent=t; c.style.opacity=1; }""", text)
         if wait:
             pg.wait_for_timeout(wait)
@@ -196,12 +205,12 @@ with sync_playwright() as p:
     # 1. Opening and problem
     pg.set_content(card_html([], big="تبيّن", sub="تحقّق من الآية أو الحديث قبل أن تنشره",
                              small="تحدي الذكاء الاصطناعي في خدمة المحتوى الإسلامي"))
-    pg.wait_for_timeout(3200)
+    pg.wait_for_timeout(2700)
     pg.set_content(card_html([
         "رسائل كثيرة تنتشر فيها أحاديث مكذوبة،",
         "وآيات تغيّرت كلماتها، وصور يُنسب فيها كلام إلى النبي ﷺ دون أصل.",
         "<span style='color:#30D0C8'>والتحقق منها يدويًا بطيء ويحتاج خبرة.</span>"]))
-    pg.wait_for_timeout(4800)
+    pg.wait_for_timeout(4300)
 
     # 2. A saying with no source: alternative + polite reply
     pg.goto(API + "/#/check")
@@ -210,25 +219,25 @@ with sync_playwright() as p:
     caption("الصق الرسالة كما وصلتك", 1200)
     type_check(LIVE["A_TEXT"])
     scroll_to(top_of(".result", 0, 120))
-    caption("قول مشهور لا أصل له في المصادر: ينبَّه ألا يُنشر منسوبًا إلى النبي ﷺ", 3800)
+    caption("قول مشهور لا أصل له في المصادر: ينبَّه ألا يُنشر منسوبًا إلى النبي ﷺ", 3300)
     caption("")
     move_to(pg.get_by_role("button", name="ابحث عن نص صحيح بديل"))
     pg.wait_for_selector(".alts .alt")
     scroll_to(top_of(".alts", 0, 140))
-    caption("وبدلًا منه: حديث صحيح وآية بالمعنى نفسه، من المصادر لا من ذاكرة النموذج", 4200)
+    caption("وبدلًا منه: حديث صحيح وآية بالمعنى نفسه، من المصادر لا من ذاكرة النموذج", 3700)
     caption("")
     move_to(pg.get_by_role("button", name="اكتب ردًا لطيفًا"))
     pg.wait_for_selector(".reply")
     scroll_to(top_of(".reply", 0, 160))
-    caption("وردّ لطيف جاهز للإرسال إلى المجموعة، مع زر واتساب", 4200)
+    caption("وردّ لطيف جاهز للإرسال إلى المجموعة، مع زر واتساب", 3600)
 
     # 3. Two hadiths inside a chatty message
     caption("")
     type_check(LIVE["D_TEXT"], delay=6)
     scroll_to(top_of(".result", 0))
-    caption("حديثان وسط تحية ودعاء: يستخرجهما Claude، والحكم من المصادر. الأول في صحيح البخاري", 4300)
+    caption("حديثان وسط تحية ودعاء: يستخرجهما Claude، والحكم من المصادر. الأول في صحيح البخاري", 3900)
     scroll_to(top_of(".result", 1))
-    caption("الثاني سقطت منه كلمة «لك»، فتظهر في النص الصحيح من جامع الترمذي", 4000)
+    caption("الثاني سقطت منه كلمة «لك»، فتظهر في النص الصحيح من جامع الترمذي", 3600)
 
     # 4. A screenshot
     caption("")
@@ -241,12 +250,12 @@ with sync_playwright() as p:
         o.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,20,40,.55);z-index:2147483640';
         o.innerHTML='<img src="'+src+'" style="width:560px;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4)">';
         document.body.appendChild(o); }""", png)
-    pg.wait_for_timeout(2400)
+    pg.wait_for_timeout(2000)
     pg.evaluate("() => document.getElementById('__shot')?.remove()")
     pg.wait_for_selector(".result", timeout=60000)
     pg.wait_for_timeout(400)
     scroll_to(top_of(".transcript-note", 0, 40))
-    caption("يقرأ Claude النص كما هو دون تصحيح، ثم يُفحص: «قرأ» بدل «تعلّم» في صحيح البخاري", 4800)
+    caption("يقرأ Claude النص كما هو دون تصحيح، ثم يُفحص: «قرأ» بدل «تعلّم» في صحيح البخاري", 4300)
     caption("")
     with pg.expect_download() as dl:
         move_to(pg.get_by_role("button", name="صورة للمشاركة"))
@@ -257,7 +266,7 @@ with sync_playwright() as p:
         o.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,20,40,.6);z-index:2147483640';
         o.innerHTML='<img src="'+src+'" style="width:470px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.4)">';
         document.body.appendChild(o); }""", card_src)
-    caption("أي نتيجة تُحفظ صورة للحالة أو لوسائل التواصل", 3300)
+    caption("أي نتيجة تُحفظ صورة للحالة أو لوسائل التواصل", 3000)
     pg.evaluate("() => document.getElementById('__shot')?.remove()")
 
     # 5. English
@@ -269,7 +278,7 @@ with sync_playwright() as p:
     caption("بالإنجليزية أيضًا: تقارَن بأربع ترجمات معروفة للقرآن", 0)
     type_check(LIVE["F_TEXT"], delay=12)
     scroll_to(top_of(".result", 0))
-    pg.wait_for_timeout(3600)
+    pg.wait_for_timeout(3300)
     caption("")
     pg.select_option(".side select", "ar")
     pg.wait_for_timeout(500)
@@ -278,13 +287,13 @@ with sync_playwright() as p:
     nav("search")
     move_to(pg.locator(".topics .chip").first)
     pg.wait_for_selector(".hit", timeout=60000)
-    caption("ابحث بالموضوع: آيات وأحاديث صحيحة جاهزة للمشاركة", 3800)
+    caption("ابحث بالموضوع: آيات وأحاديث صحيحة جاهزة للمشاركة", 3200)
     scroll_to(260, 900)
-    pg.wait_for_timeout(600)
+    pg.wait_for_timeout(300)
     nav("myths")
-    caption("قائمة بأقوال منتشرة لا أصل لها في الكتب التسعة", 3200)
+    caption("قائمة بأقوال منتشرة لا أصل لها في الكتب التسعة", 2700)
     nav("learn")
-    caption("وحديث اليوم من الأربعين النووية، ودروس قصيرة", 2800)
+    caption("وحديث اليوم من الأربعين النووية، ودروس قصيرة", 2400)
 
     # 7. Phone layout
     caption("")
@@ -294,9 +303,9 @@ with sync_playwright() as p:
     pg.wait_for_timeout(900)
     frame.locator(".chip").nth(1).click()
     frame.locator(".result").wait_for(timeout=60000)
-    pg.wait_for_timeout(1300)
+    pg.wait_for_timeout(1000)
     frame.locator(".result").first.evaluate("e => window.scrollTo({top: e.getBoundingClientRect().top + scrollY - 70, behavior: 'smooth'})")
-    pg.wait_for_timeout(3000)
+    pg.wait_for_timeout(2700)
 
     # 8. Chrome extension
     pg.goto("http://localhost:8765/")
@@ -320,7 +329,7 @@ with sync_playwright() as p:
         await new Promise(r => setTimeout(r, 500));
         await chrome.scripting.executeScript({target:{tabId:tab.id}, func:(d)=>globalThis.TabayyanPanel.show(d), args:[data]});
     }""", "قال رسول الله صلى الله عليه وسلم: «النظافة من الإيمان»")
-    caption("النتيجة فوق الصفحة نفسها. وبالزر الأيمن على صورة: تحقّق من الصورة", 4600)
+    caption("النتيجة فوق الصفحة نفسها. وبالزر الأيمن على صورة: تحقّق من الصورة", 4200)
 
     # 9. How it stays reliable, closing
     pg.set_content(card_html([
@@ -329,11 +338,11 @@ with sync_playwright() as p:
         "<span class='dim'>Claude يستخرج النص ويقرأ الصور ويشرح، وكل ذلك يُتحقق منه</span>",
         "<span class='dim'>99.4% من النصوص الصحيحة تُعرف، و98.1% من المحرّفة تُكشف (100 عينة)</span>",
         "<span style='color:#30D0C8'>لا يُصدر فتاوى، ويحيل إلى أهل العلم</span>"]))
-    pg.wait_for_timeout(5600)
+    pg.wait_for_timeout(5300)
     pg.set_content(card_html([], big="تبيّن", sub="تحقّق قبل أن تنشر", small="tabayyan.onrender.com · محمد الزهراني"))
-    pg.wait_for_timeout(3600)
+    pg.wait_for_timeout(3000)
 
-    print(f"recorded {time.time() - T0:.1f}s")
+    print(f"recorded {time.time() - T0:.1f}s, starts at {T0 - T_START:.2f}s into the video")
     video = pg.video.path()
     ctx.close()
     print(video)

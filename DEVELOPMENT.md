@@ -40,6 +40,7 @@ The work done before Oct 4 is listed here openly so judges can see what existed 
 |---|---|---|
 | `a6aea62` | Brand-color background with a faint eight-point star pattern | The page looked plain. |
 | `28087bc` | App layout: side menu on desktop, top bar and bottom tabs on phones. New sections: search the sources by topic, popular unsourced sayings, history (on the device only), extension and app, about (with the test results). Share any result as an image card. | Everything was stacked in one column. Search and the sayings list help people find authentic texts to share, not only check doubtful ones. |
+| `be97dd1`, `754eb65`, `90431e3` | Topic search: Claude now drops results that only share a word with the topic (it returns ids only, texts still come from the sources). Explanations now see source words that were left out of a quote. Without Claude, the rule-based extraction shows the part in quotation marks instead of the whole message. New demo video for the new layout. | Found while recording the demo: searching "بر الوالدين" returned a verse with "أف" that is not about parents, and one explanation said the differing word was not specified when a word had been dropped. |
 
 ## Oct 4 to 6: challenge days
 
