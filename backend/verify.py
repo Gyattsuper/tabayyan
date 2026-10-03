@@ -17,7 +17,7 @@ from rapidfuzz import fuzz
 import ai
 from arabic import normalize
 from english import normalize_en, source_words_en
-from extract import candidates, claimed_kind
+from extract import _QUOTES, _QUOTES_SINGLE, candidates, claimed_kind, normalize_any
 from matcher import FOUND, Match, Matcher, verdict
 
 STRONG = {"صحيح", "حسن"}
@@ -341,14 +341,19 @@ def verify(matcher: Matcher, message: str, lang: str = "ar") -> dict:
 
     def strongest(text):
         best = None
-        for i, cand in enumerate(candidates(text)):
+        cands = candidates(text)
+        # spans the sender put in quotation marks: with the same verdict, show exactly these
+        quoted = {normalize_any(m.group(1)) for rx in (_QUOTES, _QUOTES_SINGLE) for m in rx.finditer(text)}
+        for i, cand in enumerate(cands):
             ms = matcher.search(cand)
-            # strongest verdict, then closest match, then the longest quote (the whole verse
-            # rather than a piece of it that also happens to match). If nothing is found,
-            # report the most specific span (the quoted part), not the whole message.
+            # strongest verdict, then a span in quotation marks (so "قال رسول الله ﷺ:" is not
+            # shown as part of the quote), then closest match, then the longest quote
+            # (the whole verse rather than a piece of it that also happens to match).
+            # If nothing is found, report the most specific span (the quoted part).
             rank = _RANK[verdict(ms)]
-            key = ((rank, round(ms[0].score) if ms else 0, len(cand.split())) if rank
-                   else (0, -1 if len(cand.split()) >= 3 else -2, -i))
+            in_marks = normalize_any(cand) in quoted
+            key = ((rank, in_marks, round(ms[0].score) if ms else 0, len(cand.split())) if rank
+                   else (0, -1 if len(cand.split()) >= 3 else -2, False, -i))
             if best is None or key > best[0]:
                 best = (key, cand, ms)
         return best
