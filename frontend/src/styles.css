@@ -4,7 +4,7 @@
   --teal: #30d0c8;
   --sky: #40a8e0;
   --indigo: #5b60e9;
-  --paper: #f4f7fb;
+  --paper: #eef3fa;
   --surface: #ffffff;
   --ink: #16233b;
   --muted: #5d6b82;
@@ -25,7 +25,14 @@
 
 body {
   margin: 0;
-  background: var(--paper);
+  background-color: var(--paper);
+  /* soft brand-color light, plus a faint eight-point star pattern */
+  background-image:
+    radial-gradient(60rem 40rem at 0% 0%, rgba(48, 208, 200, 0.16), transparent 60%),
+    radial-gradient(50rem 40rem at 100% 30%, rgba(91, 96, 233, 0.14), transparent 60%),
+    radial-gradient(60rem 40rem at 30% 100%, rgba(64, 168, 224, 0.14), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23193565' stroke-opacity='0.07' stroke-width='1'%3E%3Crect x='22' y='22' width='28' height='28'/%3E%3Crect x='22' y='22' width='28' height='28' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='6'/%3E%3Cpath d='M0 0l8 8M72 0l-8 8M0 72l8-8M72 72l-8-8'/%3E%3C/g%3E%3C/svg%3E");
+  min-height: 100vh;
   color: var(--ink);
   font-family: var(--ui);
   font-size: 16px;
@@ -36,7 +43,12 @@ body {
 
 /* ---------- header band ---------- */
 .band {
-  background: var(--navy);
+  background:
+    radial-gradient(36rem 18rem at 85% -20%, rgba(48, 208, 200, 0.35), transparent 70%),
+    radial-gradient(30rem 16rem at 10% 120%, rgba(91, 96, 233, 0.45), transparent 70%),
+    linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 45%, #22307a 78%, #33389f 100%);
+  border-bottom: 4px solid transparent;
+  border-image: linear-gradient(90deg, var(--teal), var(--sky) 50%, var(--indigo)) 1;
   color: #fff;
   padding: 28px 16px 22px;
   overflow: hidden;
@@ -299,6 +311,9 @@ dd.g-weak { color: var(--missing); }
 .scope { margin-top: 14px; font-size: 13px; color: var(--muted); }
 
 /* ---------- footer ---------- */
+.result, .daily, .lesson, .ask textarea {
+  box-shadow: 0 1px 2px rgba(25, 53, 101, 0.06), 0 8px 24px -12px rgba(25, 53, 101, 0.18);
+}
 .foot {
   padding: 20px 16px 40px;
   border-top: 1px solid var(--line);
