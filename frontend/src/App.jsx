@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageButton, Learn, ResultActions, X, checkImage } from "./extras.jsx";
+import { AboutView, HistoryView, Icon, MythsView, NAV, SearchView, ToolsView, V, addHistory } from "./views.jsx";
 
 const API = import.meta.env.VITE_API_URL || "";
 
@@ -9,6 +10,7 @@ const T = {
   ar: {
     dir: "rtl",
     tagline: "تحقّق من الآية أو الحديث قبل أن تنشره",
+    checkTitle: "تحقّق قبل أن تنشر",
     ayahMeaning: null,
     ayahRef: "الحجرات: ٦",
     langLabel: "اللغة",
@@ -57,6 +59,7 @@ const T = {
   en: {
     dir: "ltr",
     tagline: "Check a verse or hadith before you share it",
+    checkTitle: "Check before you share",
     ayahMeaning: "“O you who have believed, if there comes to you a disobedient one with information, investigate.”",
     ayahRef: "Al-Hujurat 49:6",
     langLabel: "Language",
@@ -253,19 +256,31 @@ function Result({ r, t, lang, aiOn }) {
         </details>
       )}
 
-      <ResultActions key={`${r.quote}-${lang}`} r={r} lang={lang} aiOn={aiOn} />
+      <ResultActions key={`${r.quote}-${lang}`} r={r} lang={lang} aiOn={aiOn} title={v.title} tone={v.tone} />
     </article>
   );
 }
 
+const VIEWS = NAV.map((n) => n.id);
+const MOBILE_TABS = ["check", "search", "myths", "learn"];
+
+function viewFromHash() {
+  const h = window.location.hash.replace(/^#\/?/, "");
+  return VIEWS.includes(h) ? h : "check";
+}
+
 export default function App() {
   const [lang, setLang] = useState(initialLang);
+  const [view, setView] = useState(viewFromHash);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [text, setText] = useState("");
   const [state, setState] = useState({ status: "idle" });
   const [aiOn, setAiOn] = useState(false);
   const inputRef = useRef(null);
+  const mainRef = useRef(null);
   const t = T[lang];
   const x = X[lang];
+  const v = V[lang];
 
   useEffect(() => {
     fetch(`${API}/api/health`).then((r) => r.json()).then((h) => setAiOn(Boolean(h.claude))).catch(() => {});
@@ -281,19 +296,35 @@ export default function App() {
     } catch {
       /* ignore */
     }
+    const onHash = () => setView(viewFromHash());
+    window.addEventListener("hashchange", onHash);
+    const keep = (e) => { e.preventDefault(); window.__installPrompt = e; };
+    window.addEventListener("beforeinstallprompt", keep);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("beforeinstallprompt", keep);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = t.dir;
-    document.title = lang === "ar" ? "تبيّن" : "Tabayyan";
+    document.title = (lang === "ar" ? "تبيّن" : "Tabayyan") + (view === "check" ? "" : ` · ${v.nav[view]}`);
     try {
       window.localStorage.setItem("tabayyan-lang", lang);
     } catch {
       /* not saved; fine */
     }
-  }, [lang, t.dir]);
+  }, [lang, t.dir, view, v.nav]);
+
+  function go(id) {
+    setMoreOpen(false);
+    if (window.location.hash !== `#/${id}`) window.location.hash = `/${id}`;
+    setView(id);
+    window.scrollTo({ top: 0 });
+    mainRef.current?.focus({ preventScroll: true });
+  }
 
   async function check(value = text, l = lang) {
     if (!value.trim()) {
@@ -309,16 +340,25 @@ export default function App() {
         body: JSON.stringify({ text: value, lang: l }),
       });
       if (!res.ok) throw new Error(res.status);
-      setState({ status: "done", data: await res.json() });
+      const data = await res.json();
+      setState({ status: "done", data });
+      addHistory(value, data);
     } catch {
       setState({ status: "error", message: T[l].netError });
     }
   }
 
+  // From other views (sayings, history, search): open the checker and run it.
+  function checkFrom(value) {
+    setText(value);
+    go("check");
+    check(value);
+  }
+
   function changeLang(l) {
     setLang(l);
     // Results are written in the chosen language, so fetch them again.
-    if (state.status === "done") check(text, l);
+    if (state.status === "done" && !state.fromImage) check(text, l);
     else if (state.status === "error") setState({ status: "idle" });
   }
 
@@ -328,6 +368,7 @@ export default function App() {
       const data = await checkImage(file, l);
       if (data.transcript) setText(data.transcript);
       setState({ status: "done", data, fromImage: true });
+      if (data.transcript) addHistory(data.transcript, data);
     } catch (e) {
       const msg = String(e.message || "");
       setState({ status: "error", message: msg && !/^\d+$/.test(msg) ? msg : T[l].netError });
@@ -347,107 +388,165 @@ export default function App() {
     check(ex.text);
   }
 
+  const brand = lang === "ar" ? "تبيّن" : "Tabayyan";
+  const langSelect = (cls) => (
+    <label className={cls}>
+      <span className="sr-only">{t.langLabel}</span>
+      <select value={lang} onChange={(e) => changeLang(e.target.value)} aria-label={t.langLabel}>
+        <option value="ar">العربية</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+  );
+
   return (
-    <>
-      <header className="band">
-        <div className="band-inner">
-          <Mark />
-          <div className="brand">
-            <h1>{lang === "ar" ? "تبيّن" : "Tabayyan"}</h1>
-            <p className="tagline">{t.tagline}</p>
-          </div>
-          <label className="lang">
-            <span className="sr-only">{t.langLabel}</span>
-            <select value={lang} onChange={(e) => changeLang(e.target.value)} aria-label={t.langLabel}>
-              <option value="ar">العربية</option>
-              <option value="en">English</option>
-            </select>
-          </label>
+    <div className="shell">
+      <a className="skip" href="#main">{lang === "ar" ? "انتقل إلى المحتوى" : "Skip to content"}</a>
+
+      {/* side navigation (desktop) */}
+      <aside className="side" aria-label={v.menu}>
+        <a className="side-brand" href="#/check" onClick={(e) => { e.preventDefault(); go("check"); }}>
+          <Mark size={44} />
+          <strong>{brand}</strong>
+        </a>
+        <nav className="nav">
+          {NAV.map((n) => (
+            <a key={n.id} href={`#/${n.id}`} aria-current={view === n.id ? "page" : undefined}
+              onClick={(e) => { e.preventDefault(); go(n.id); }}>
+              <Icon name={n.icon} />
+              <span>{v.nav[n.id]}</span>
+            </a>
+          ))}
+        </nav>
+        <div className="side-foot">
+          <p className="side-ayah" dir="rtl" lang="ar">﴿إِنْ جَاءَكُمْ فَاسِقٌ بِنَبَإٍ فَتَبَيَّنُوا﴾</p>
+          <p className="side-ref">{t.ayahRef}</p>
+          {langSelect("lang")}
+          <p className="side-note">{v.noFatwa}</p>
         </div>
-        <p className="ayah-note">
-          <span className="amiri" dir="rtl" lang="ar">﴿يَا أَيُّهَا الَّذِينَ آمَنُوا إِنْ جَاءَكُمْ فَاسِقٌ بِنَبَإٍ فَتَبَيَّنُوا﴾</span>
-          {t.ayahMeaning && <span className="ayah-meaning">{t.ayahMeaning}</span>}
-          <span className="ayah-ref">{t.ayahRef}</span>
-        </p>
+      </aside>
+
+      {/* top bar (phone) */}
+      <header className="topbar">
+        <a className="top-brand" href="#/check" onClick={(e) => { e.preventDefault(); go("check"); }}>
+          <Mark size={30} />
+          <strong>{brand}</strong>
+        </a>
+        {langSelect("lang lang-top")}
       </header>
 
-      <main className="page">
-        <form
-          className="ask"
-          onSubmit={(e) => {
-            e.preventDefault();
-            check();
-          }}
-        >
-          <label htmlFor="msg">{t.label}</label>
-          <textarea
-            id="msg"
-            ref={inputRef}
-            value={text}
-            dir="auto"
-            onChange={(e) => setText(e.target.value)}
-            onPaste={onPaste}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              const f = e.dataTransfer?.files?.[0];
-              if (f && f.type.startsWith("image/")) { e.preventDefault(); checkFile(f); }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) check();
-            }}
-            rows={5}
-            placeholder={t.placeholder}
-          />
-          <div className="ask-row">
-            <button type="submit" disabled={state.status === "loading"}>
-              {state.status === "loading" ? t.checking : t.check}
-            </button>
-            {aiOn && <ImageButton lang={lang} disabled={state.status === "loading"} onFile={(f) => checkFile(f)} />}
-            <div className="examples">
-              <span>{t.try}</span>
-              {t.examples.map((ex) => (
-                <button type="button" key={ex.label} className="chip" onClick={() => tryExample(ex)}>
-                  {ex.label}
+      <main id="main" className="main" ref={mainRef} tabIndex={-1}>
+        {view === "check" && (
+          <section className="view">
+            <header className="view-head check-head">
+              <h1>{t.checkTitle}</h1>
+              <p>{t.how[0]}</p>
+            </header>
+            <form
+              className="ask"
+              onSubmit={(e) => {
+                e.preventDefault();
+                check();
+              }}
+            >
+              <label htmlFor="msg" className="sr-only">{t.label}</label>
+              <textarea
+                id="msg"
+                ref={inputRef}
+                value={text}
+                dir="auto"
+                onChange={(e) => setText(e.target.value)}
+                onPaste={onPaste}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  const f = e.dataTransfer?.files?.[0];
+                  if (f && f.type.startsWith("image/")) { e.preventDefault(); checkFile(f); }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) check();
+                }}
+                rows={5}
+                placeholder={t.label + (aiOn ? ` · ${x.imageTip}` : "")}
+              />
+              <div className="ask-row">
+                <button type="submit" disabled={state.status === "loading"}>
+                  {state.status === "loading" ? t.checking : t.check}
                 </button>
-              ))}
-            </div>
-          </div>
-        </form>
+                {aiOn && <ImageButton lang={lang} disabled={state.status === "loading"} onFile={(f) => checkFile(f)} />}
+              </div>
+              <div className="examples">
+                <span>{t.try}</span>
+                {t.examples.map((ex) => (
+                  <button type="button" key={ex.label} className="chip" onClick={() => tryExample(ex)}>
+                    {ex.label}
+                  </button>
+                ))}
+              </div>
+            </form>
 
-        {state.status === "error" && <p className="error" role="alert">{state.message}</p>}
-        {state.status === "loading" && <p className="loading" role="status">{state.message || t.loading}</p>}
-        {state.status === "done" && state.fromImage && state.data.transcript && (
-          <p className="transcript-note">{x.readFrom}</p>
-        )}
-        {state.status === "done" && state.data.results.map((r, i) => <Result key={i} r={r} t={t} lang={lang} aiOn={aiOn} />)}
-        {state.status === "done" && state.data.results.length === 0 && (
-          <p className="error" role="alert">{state.data.message}</p>
-        )}
-        {state.status === "done" && state.data.results.length > 0 && <p className="scope">{state.data.results[0].scope}</p>}
-
-        {state.status === "idle" && (
-          <section className="how">
-            {t.how.map((p, i) => <p key={i}>{p}</p>)}
-            {aiOn && <p className="muted small">{x.imageTip}</p>}
+            {state.status === "error" && <p className="error" role="alert">{state.message}</p>}
+            {state.status === "loading" && <p className="loading" role="status">{state.message || t.loading}</p>}
+            {state.status === "done" && state.fromImage && state.data.transcript && (
+              <p className="transcript-note">{x.readFrom}</p>
+            )}
+            {state.status === "done" && state.data.results.map((r, i) => <Result key={i} r={r} t={t} lang={lang} aiOn={aiOn} />)}
+            {state.status === "done" && state.data.results.length === 0 && (
+              <p className="error" role="alert">{state.data.message}</p>
+            )}
+            {state.status === "done" && state.data.results.length > 0 && <p className="scope">{state.data.results[0].scope}</p>}
+            {state.status === "idle" && <p className="idle-note">{t.how[2]} {t.how[1]}</p>}
           </section>
         )}
-        {state.status === "idle" && <Learn lang={lang} />}
+        {view === "search" && <SearchView lang={lang} onCheck={checkFrom} />}
+        {view === "myths" && <MythsView lang={lang} onCheck={checkFrom} />}
+        {view === "learn" && (
+          <section className="view">
+            <header className="view-head"><h1>{v.learnTitle}</h1><p>{v.learnIntro}</p></header>
+            <Learn lang={lang} bare />
+          </section>
+        )}
+        {view === "history" && <HistoryView lang={lang} t={t} onCheck={checkFrom} />}
+        {view === "tools" && <ToolsView lang={lang} />}
+        {view === "about" && <AboutView lang={lang} />}
+
+        <footer className="foot">
+          <p>{t.foot1}</p>
+          <p>{t.foot2}</p>
+        </footer>
       </main>
 
-      <footer className="foot">
-        <p>{t.foot1}</p>
-        <p>{t.foot2}</p>
-        <p>
-          {t.extNote}{" "}
-          <a href="https://github.com/Gyattsuper/tabayyan#chrome-extension" target="_blank" rel="noreferrer">
-            {t.install}
-          </a>
-          {" · "}
-          <a href="https://github.com/Gyattsuper/tabayyan" target="_blank" rel="noreferrer">
-            {t.code}
-          </a>
-        </p>
-      </footer>
-    </>
+      {/* bottom tabs (phone) */}
+      <nav className="tabs" aria-label={v.menu}>
+        {MOBILE_TABS.map((id) => {
+          const n = NAV.find((x2) => x2.id === id);
+          return (
+            <a key={id} href={`#/${id}`} aria-current={view === id ? "page" : undefined}
+              onClick={(e) => { e.preventDefault(); go(id); }}>
+              <Icon name={n.icon} />
+              <span>{v.tab[id]}</span>
+            </a>
+          );
+        })}
+        <button type="button" aria-expanded={moreOpen} onClick={() => setMoreOpen((o) => !o)}
+          aria-current={!MOBILE_TABS.includes(view) ? "page" : undefined}>
+          <Icon name="menu" />
+          <span>{lang === "ar" ? "المزيد" : "More"}</span>
+        </button>
+      </nav>
+      {moreOpen && (
+        <div className="sheet-back" onClick={() => setMoreOpen(false)}>
+          <div className="sheet" role="dialog" aria-label={v.menu} onClick={(e) => e.stopPropagation()}>
+            {NAV.filter((n) => !MOBILE_TABS.includes(n.id)).map((n) => (
+              <a key={n.id} href={`#/${n.id}`} aria-current={view === n.id ? "page" : undefined}
+                onClick={(e) => { e.preventDefault(); go(n.id); }}>
+                <Icon name={n.icon} />
+                <span>{v.nav[n.id]}</span>
+              </a>
+            ))}
+            <p className="side-note">{v.noFatwa}</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

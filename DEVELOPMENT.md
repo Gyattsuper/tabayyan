@@ -34,6 +34,13 @@ The work done before Oct 4 is listed here openly so judges can see what existed 
 | `6818dc1` | Checking images and screenshots (upload, paste, or right-click an image in the extension); authentic alternatives for unsourced or weak texts; a polite reply to send back, with WhatsApp sharing; the site installable as an app with "share to Tabayyan" on Android; a Learn section (hadith of the day from an-Nawawi's Forty, short lessons on gradings and on spotting fabricated messages) | Most viral religious content is shared as images. Telling someone a text is unsourced is more useful with an authentic text to share instead and a kind way to say it. In every feature, verses and hadiths shown come from the sources, not from the model. |
 | `e32b216` to `c6ca099` | Fixes found by testing the new features on the live site: Claude's replies were silently falling back to templates because the model can return a "thinking" block before its text; hadith links ended in ".0"; images are now accepted only if the file bytes are a real JPG, PNG, WebP or GIF. Feature tests added (`tests/run_feature_tests.py`). | Every feature was tested on the live site, and the server now logs failed AI calls so problems are visible. |
 
+## Oct 3: a real app layout, and more tools
+
+| Commit | What | Why |
+|---|---|---|
+| `a6aea62` | Brand-color background with a faint eight-point star pattern | The page looked plain. |
+| (this commit) | App layout: side menu on desktop, top bar and bottom tabs on phones. New sections: search the sources by topic, popular unsourced sayings, history (on the device only), extension and app, about (with the test results). Share any result as an image card. | Everything was stacked in one column. Search and the sayings list help people find authentic texts to share, not only check doubtful ones. |
+
 ## Oct 4 to 6: challenge days
 
 Planned:

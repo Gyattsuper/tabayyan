@@ -6,6 +6,7 @@
   POST /api/alternatives  {"text": "...", "lang"}  -> authentic texts with a related meaning
   POST /api/reply         {"result": {...}, "alternative": {...} | null, "lang"}  -> a polite reply to send
   GET  /api/daily?lang=   -> hadith of the day (from an-Nawawi's Forty)
+  GET  /api/search?q=&lang=&kind=quran|hadith&all=0|1  -> verses and hadiths matching a topic
   GET  /api/health
 
 Run locally:  uvicorn api:app --port 8000
@@ -97,6 +98,11 @@ class ReplyRequest(BaseModel):
 @app.post("/api/reply")
 def reply(req: ReplyRequest):
     return extras.reply(req.result, req.alternative, _lang(req.lang))
+
+
+@app.get("/api/search")
+def search(q: str = "", lang: str = "ar", kind: str = "", all: int = 0):
+    return extras.search_sources(matcher, q, _lang(lang), kind or None, strong_only=not all)
 
 
 @app.get("/api/daily")

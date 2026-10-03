@@ -32,6 +32,12 @@ partial match in English may just be a different translation, and the result say
 - **Share from WhatsApp:** the site can be installed as an app on Android; then share any message to Tabayyan.
 - **Learn:** a hadith of the day from an-Nawawi's Forty, and short lessons on hadith gradings and on how to
   spot a fabricated forwarded message.
+- **Search the sources:** type a topic (parents, patience, neighbors) and get authentic verses and hadiths about
+  it. With the AI service, Claude only rewrites the topic into search phrases; every result is from the sources.
+- **Popular unsourced sayings:** a list of sayings that spread as hadiths but are not in the nine books; tap one
+  to see the check.
+- **Share as image:** any result can be saved or shared as a square card for WhatsApp status or social media.
+- **Your history:** recent checks, kept only on your device.
 
 ## How it works
 

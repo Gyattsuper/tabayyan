@@ -189,6 +189,32 @@ Return JSON only: {"en": ["...", "...", "..."], "ar": "..."}
 - "ar": 4 to 8 Arabic keywords for the core meaning, as they would appear in classical texts.
 Your phrasings are only used as search queries. Do not attribute anything to the Prophet ﷺ."""
 
+TOPIC_SYSTEM = """A user wants to find Quran verses and authentic hadiths about a topic. They typed the topic
+in Arabic or English. We will search the English translations of the Quran and the hadith collections.
+
+Return JSON only: {"en": ["...", "...", "..."], "ar": "..."}
+- "en": three short phrasings (each under 15 words) of how English translations of verses and hadiths
+  word this topic, using the words those translations typically use.
+- "ar": 3 to 6 Arabic keywords for the topic, as they would appear in classical texts.
+Your phrasings are only search queries. Do not quote or invent any verse or hadith."""
+
+
+def topic_terms(topic: str) -> dict | None:
+    c = client()
+    if c is None:
+        return None
+    try:
+        resp = c.messages.create(model=MODEL, max_tokens=800, system=TOPIC_SYSTEM,
+                                 messages=[{"role": "user", "content": topic[:300]}])
+        d = _json(_text(resp))
+        en = d.get("en", [])
+        en = [str(x) for x in (en if isinstance(en, list) else [en]) if str(x).strip()][:4]
+        return {"en": en, "ar": str(d.get("ar", ""))}
+    except Exception:
+        log.exception("Claude call failed")
+        return None
+
+
 PICK_SYSTEM = """A user checked a saying that was not found in the sources, or was graded weak. Below it are
 candidate texts retrieved from authenticated sources (each with an id).
 

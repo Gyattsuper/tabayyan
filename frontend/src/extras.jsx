@@ -15,6 +15,9 @@ export const X = {
     altTitle: "نصوص صحيحة قريبة المعنى",
     altNote: "اختيرت من المصادر الموثقة فقط، ونصها منقول منها كما هو. قرب المعنى تقدير، فارجع إلى أهل العلم في فهمها.",
     writeReply: "اكتب ردًا لطيفًا",
+    shareImage: "صورة للمشاركة",
+    cardCorrect: "النص الصحيح:",
+    cardFoot: "تحقّق قبل أن تنشر · tabayyan.onrender.com",
     writingReply: "نكتب الرد…",
     replyTitle: "رد يمكنك إرساله",
     copy: "نسخ",
@@ -76,6 +79,9 @@ export const X = {
     altTitle: "Authentic texts with a close meaning",
     altNote: "Chosen only from the authenticated sources, quoted exactly as they are there. Closeness of meaning is an estimate, so ask scholars about their meaning.",
     writeReply: "Write a polite reply",
+    shareImage: "Share as image",
+    cardCorrect: "The correct text:",
+    cardFoot: "Check before you share · tabayyan.onrender.com",
     writingReply: "Writing the reply…",
     replyTitle: "A reply you can send",
     copy: "Copy",
@@ -190,7 +196,7 @@ function CopyButton({ text, x }) {
 }
 
 // Buttons under a result: authentic alternatives (for unsourced or weak texts) and a polite reply.
-export function ResultActions({ r, lang, aiOn }) {
+export function ResultActions({ r, lang, aiOn, title, tone }) {
   const x = X[lang];
   const [alt, setAlt] = useState({ status: "idle" });
   const [reply, setReply] = useState({ status: "idle" });
@@ -225,6 +231,9 @@ export function ResultActions({ r, lang, aiOn }) {
         )}
         {reply.status !== "loading" && (
           <button type="button" className="act ghost" onClick={writeReply}>{x.writeReply}</button>
+        )}
+        {title && (
+          <button type="button" className="act ghost" onClick={() => shareCard(r, title, tone, lang)}>{x.shareImage}</button>
         )}
       </div>
 
@@ -277,7 +286,7 @@ export function ResultActions({ r, lang, aiOn }) {
 }
 
 // Hadith of the day (straight from the data) and short lessons on checking.
-export function Learn({ lang }) {
+export function Learn({ lang, bare = false }) {
   const x = X[lang];
   const [day, setDay] = useState(null);
   useEffect(() => {
@@ -287,7 +296,7 @@ export function Learn({ lang }) {
   }, [lang]);
   return (
     <section className="learn" aria-labelledby="learn-h">
-      <h2 id="learn-h">{x.learn}</h2>
+      {!bare && <h2 id="learn-h">{x.learn}</h2>}
       {day && (
         <article className="daily">
           <h3>{x.daily}</h3>
@@ -306,4 +315,129 @@ export function Learn({ lang }) {
       ))}
     </section>
   );
+}
+
+// ---------- share a result as an image ----------
+
+const TONES = { found: "#30d0c8", partial: "#f2b33d", missing: "#ff7b7b", scope: "#9db7ff" };
+
+function wrap(ctx, text, maxWidth) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// A square card (for WhatsApp status, Instagram, X) with the verdict, the text and the source.
+export async function shareCard(r, title, tone, lang) {
+  const x = X[lang];
+  const S = 1080;
+  const c = document.createElement("canvas");
+  c.width = S;
+  c.height = S;
+  const g = c.getContext("2d");
+  try {
+    await Promise.all([document.fonts.load("44px Amiri"), document.fonts.load("600 40px 'Readex Pro'")]);
+  } catch {
+    /* fall back to system fonts */
+  }
+  const bg = g.createLinearGradient(0, 0, S, S);
+  bg.addColorStop(0, "#12284d");
+  bg.addColorStop(0.55, "#193565");
+  bg.addColorStop(1, "#33389f");
+  g.fillStyle = bg;
+  g.fillRect(0, 0, S, S);
+  // faint rosette in the corner
+  const mark = new Image();
+  mark.src = "/mark.svg";
+  await new Promise((res) => { mark.onload = res; mark.onerror = res; });
+  g.globalAlpha = 0.12;
+  g.drawImage(mark, S - 520, -160, 680, 680);
+  g.globalAlpha = 1;
+
+  const rtl = lang === "ar";
+  g.direction = rtl ? "rtl" : "ltr";
+  g.textAlign = rtl ? "right" : "left";
+  const X0 = rtl ? S - 90 : 90;
+  const W = S - 180;
+
+  g.fillStyle = TONES[tone] || "#ffffff";
+  g.font = "600 58px 'Readex Pro', sans-serif";
+  g.fillText(title, X0, 190);
+
+  const m = r.match;
+  const words = m ? m.words.filter((w) => w.status !== "context").map((w) => w.word).join(" ") : r.quote;
+  const arabic = !m || m.words_lang !== "en";
+  g.fillStyle = "#ffffff";
+  g.direction = arabic ? "rtl" : "ltr";
+  g.textAlign = arabic ? "right" : "left";
+  const TX = arabic ? S - 90 : 90;
+  let size = 76;
+  let lines;
+  do {
+    size -= 4;
+    g.font = arabic ? `${size}px Amiri, serif` : `${size - 12}px Georgia, serif`;
+    lines = wrap(g, words, W).slice(0, 9);
+  } while (lines.length * size * 1.9 > 540 && size > 30);
+  // a small label, then the text centred in the space between the title and the reference
+  const label = r.verdict === "partial" && m ? x.cardCorrect : null;
+  const lh = size * 1.9;
+  const block = lines.length * lh + (label ? 56 : 0);
+  let y = 250 + Math.max(0, (600 - block) / 2);
+  if (label) {
+    g.direction = rtl ? "rtl" : "ltr";
+    g.textAlign = rtl ? "right" : "left";
+    g.fillStyle = "#9fb3d8";
+    g.font = "400 30px 'Readex Pro', sans-serif";
+    g.fillText(label, X0, y + 30);
+    y += 56;
+    g.direction = arabic ? "rtl" : "ltr";
+    g.textAlign = arabic ? "right" : "left";
+  }
+  g.fillStyle = "#ffffff";
+  g.font = arabic ? `${size}px Amiri, serif` : `${size - 12}px Georgia, serif`;
+  y += size * 1.1;
+  for (const line of lines) {
+    g.fillText(line, TX, y);
+    y += lh;
+  }
+
+  g.direction = rtl ? "rtl" : "ltr";
+  g.textAlign = rtl ? "right" : "left";
+  if (m) {
+    g.fillStyle = "#b9c8e4";
+    g.font = "500 36px 'Readex Pro', sans-serif";
+    g.fillText(m.ref + (m.grade_summary ? `  ·  ${m.grade_summary}` : ""), X0, 900);
+  }
+  g.fillStyle = "#30d0c8";
+  g.fillRect(90, 950, S - 180, 4);
+  g.fillStyle = "#dbe5f5";
+  g.font = "400 32px 'Readex Pro', sans-serif";
+  g.fillText(x.cardFoot, X0, 1012);
+
+  const blob = await new Promise((res) => c.toBlob(res, "image/png"));
+  const file = new File([blob], "tabayyan.png", { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      return;
+    } catch {
+      /* cancelled: fall through to download */
+    }
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "tabayyan.png";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
