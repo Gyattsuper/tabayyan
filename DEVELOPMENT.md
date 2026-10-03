@@ -39,7 +39,7 @@ The work done before Oct 4 is listed here openly so judges can see what existed 
 | Commit | What | Why |
 |---|---|---|
 | `a6aea62` | Brand-color background with a faint eight-point star pattern | The page looked plain. |
-| (this commit) | App layout: side menu on desktop, top bar and bottom tabs on phones. New sections: search the sources by topic, popular unsourced sayings, history (on the device only), extension and app, about (with the test results). Share any result as an image card. | Everything was stacked in one column. Search and the sayings list help people find authentic texts to share, not only check doubtful ones. |
+| `28087bc` | App layout: side menu on desktop, top bar and bottom tabs on phones. New sections: search the sources by topic, popular unsourced sayings, history (on the device only), extension and app, about (with the test results). Share any result as an image card. | Everything was stacked in one column. Search and the sayings list help people find authentic texts to share, not only check doubtful ones. |
 
 ## Oct 4 to 6: challenge days
 
