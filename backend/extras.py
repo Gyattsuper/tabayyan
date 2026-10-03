@@ -319,8 +319,15 @@ def search_sources(matcher: Matcher, query: str, lang: str, kind: str | None = N
         if terms and (terms["en"] or terms["ar"]):
             if is_english(q):
                 terms["en"] = [q] + terms["en"]
-            records = retrieve(matcher, terms, limit=limit, kind=kind)
+            records = retrieve(matcher, terms, limit=max(limit, 30), kind=kind)
             mode = "meaning"
+            # Word overlap alone pulls in texts that share a word but not the topic
+            # ("أف" for parents). Claude keeps the relevant ones, by id only.
+            cands = [{"id": i, "ref": ref_of(r, "en"), "arabic": r["text"], "english": r.get("english", "")}
+                     for i, r in enumerate(records)]
+            keep = ai.rank_relevant(q, cands)
+            if keep is not None:
+                records = [records[i] for i in keep if 0 <= i < len(records)]
     if records is None:
         if is_english(q):
             sims = (matcher.en_matrix @ matcher.en_vec.transform([normalize_en(q)]).T).toarray().ravel()

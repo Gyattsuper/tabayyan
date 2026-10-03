@@ -128,6 +128,9 @@ def explain(result: dict, lang: str = "ar") -> str | None:
         },
         "quote_language": result.get("quote_lang"),
         "changed_words": [d["word"] for d in (result.get("diff") or []) if d["status"] != "same"],
+        # source words that were changed or left out in the quote (e.g. a dropped word)
+        "source_words_differing": [w["word"] for w in ((result.get("match") or {}).get("words") or [])
+                                   if w["status"] == "changed"],
         "warnings": result.get("warnings", []),
     }
     try:
@@ -262,6 +265,36 @@ def pick_alternatives(text: str, candidates: list[dict], lang: str) -> list[dict
             system=PICK_SYSTEM.format(lang="Arabic" if lang == "ar" else "English"),
             messages=[{"role": "user", "content": f"Saying:\n{text[:1000]}\n\nCandidates:\n{listing}"}])
         return [p for p in _json(_text(resp)).get("picks", []) if isinstance(p, dict)]
+    except Exception:
+        log.exception("Claude call failed")
+        return None
+
+
+RANK_SYSTEM = """A user searched authenticated Islamic sources for a topic. Below are candidate verses and hadiths
+(each with an id), found by word overlap, so some only share a word with the topic.
+
+Return JSON only: {"ids": [3, 0, 7]}
+- Include only candidates that are genuinely about the topic, most relevant first.
+- Leave out any that merely share a word. If none fit, return {"ids": []}."""
+
+
+def rank_relevant(topic: str, candidates: list[dict]) -> list[int] | None:
+    """candidates: [{'id', 'ref', 'arabic', 'english'}]. Returns the relevant ids in order, or None."""
+    c = client()
+    if c is None or not candidates:
+        return None
+    listing = "\n\n".join(
+        f"[{x['id']}] {x['ref']}\nArabic: {x['arabic'][:500]}\nEnglish: {x['english'][:300]}" for x in candidates)
+    try:
+        resp = c.messages.create(
+            model=MODEL, max_tokens=600, system=RANK_SYSTEM,
+            messages=[{"role": "user", "content": f"Topic: {topic[:300]}\n\nCandidates:\n{listing}"}])
+        ids = _json(_text(resp)).get("ids", [])
+        out = []
+        for i in ids:
+            if isinstance(i, int) and i not in out:
+                out.append(i)
+        return out
     except Exception:
         log.exception("Claude call failed")
         return None
