@@ -341,11 +341,14 @@ def verify(matcher: Matcher, message: str, lang: str = "ar") -> dict:
 
     def strongest(text):
         best = None
-        for cand in candidates(text):
+        for i, cand in enumerate(candidates(text)):
             ms = matcher.search(cand)
             # strongest verdict, then closest match, then the longest quote (the whole verse
-            # rather than a piece of it that also happens to match)
-            key = (_RANK[verdict(ms)], round(ms[0].score) if ms else 0, len(cand.split()))
+            # rather than a piece of it that also happens to match). If nothing is found,
+            # report the most specific span (the quoted part), not the whole message.
+            rank = _RANK[verdict(ms)]
+            key = ((rank, round(ms[0].score) if ms else 0, len(cand.split())) if rank
+                   else (0, -1 if len(cand.split()) >= 3 else -2, -i))
             if best is None or key > best[0]:
                 best = (key, cand, ms)
         return best
