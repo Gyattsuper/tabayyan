@@ -44,11 +44,10 @@ The work done before Oct 4 is listed here openly so judges can see what existed 
 
 ## Oct 4 to 6: challenge days
 
-Planned:
-
-- User testing with 3 to 5 people (an imam or teacher, content creators, people who share religious
-  messages), with real forwarded messages. Results will be added to `TESTING.md` and the deck.
-- Fixes based on what they find.
+| Date | What |
+|---|---|
+| Oct 4 | User testing: eight people (four sheikhs, three students, and the friend who organized it) tried the live site on real messages and described the results as accurate and useful. No specific problems were reported. Written up in `TESTING.md`. |
+| Oct 4 | The presentation was moved into the challenge's official participant template. |
 
 ## Main design decisions
 

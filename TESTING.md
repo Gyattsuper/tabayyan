@@ -125,6 +125,14 @@ attribution. These are checked by hand in the web app; `tests/run_tests.py` cove
   book or number that is not in the result.
 - **API unavailable:** rule-based extraction and template explanations take over; same verdicts.
 
+## User testing (Oct 4, 2026)
+
+Eight people tried the live site on real messages: four sheikhs, three students, and the friend who
+organized the session. Their overall feedback was that the results were accurate and useful. They did not
+report specific problems, and no detailed notes were recorded, so this round is a first impression, not a
+measurement. Next round: a short list of questions per result (was the verdict right, was the reference
+right, was the explanation clear), with each answer recorded.
+
 ## Known limits
 
 - "Not found" covers only the indexed collections. The interface says so every time and does not
