@@ -46,7 +46,7 @@ The work done before Oct 4 is listed here openly so judges can see what existed 
 
 | Date | What |
 |---|---|
-| Oct 4 | User testing: eight people (four sheikhs, three students, and the friend who organized it) tried the live site on real messages and described the results as accurate and useful. No specific problems were reported. Written up in `TESTING.md`. |
+| Oct 4 | User testing: eight people (four sheikhs, three students of Islamic sciences, and the friend who organized it) tried the live site on real messages and described the results as accurate and useful. No specific problems were reported. Written up in `TESTING.md`. |
 | Oct 4 | The presentation was moved into the challenge's official participant template. |
 
 ## Main design decisions
