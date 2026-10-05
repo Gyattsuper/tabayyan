@@ -87,5 +87,10 @@ check("dorar: only results that contain the quote are kept",
       dorar._contains("اطلبوا العلم ولو في الصين", items[0]["text"])
       and not dorar._contains("اطلبوا العلم ولو في الصين", items[1]["text"]))
 
+# "و" typed as its own word ("الله و ملائكته") still matches the verse
+from verify import verify
+r = verify(m, "ان الله و ملائكته يصلون على النبي", "ar")["results"][0]
+check("loose waw: «و ملائكته» found as Al-Ahzab 56", r["verdict"] == "found" and "الأحزاب" in r["match"]["ref"])
+
 print(f"\n{passed}/{passed + failed} passed")
 sys.exit(1 if failed else 0)

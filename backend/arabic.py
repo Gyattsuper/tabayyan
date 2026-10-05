@@ -21,6 +21,14 @@ _LETTER_MAP = str.maketrans({
     "ک": "ك",
 })
 
+# "و" typed as a separate word ("الله و ملائكته"): Arabic writes it joined to the next word.
+_LOOSE_WAW = re.compile(r"(?<!\S)(و[\u064B-\u0652]*)\s+(?=[\u0621-\u064A])")
+
+
+def join_waw(text: str) -> str:
+    return _LOOSE_WAW.sub(r"\1", text)
+
+
 # Honorifics that people add or drop freely; they shouldn't affect matching.
 _HONORIFICS = re.compile(
     r"صلى الله عليه وسلم|صلي الله عليه وسلم|عليه الصلاه والسلام|عليه السلام|رضي الله عنهما|رضي الله عنها|رضي الله عنه"
@@ -28,7 +36,7 @@ _HONORIFICS = re.compile(
 
 
 def normalize(text: str) -> str:
-    text = text.replace("ﷺ", " ")
+    text = join_waw(text.replace("ﷺ", " "))
     text = _DIACRITICS.sub("", text).replace(_TATWEEL, "")
     text = text.translate(_LETTER_MAP)
     text = _NON_ARABIC.sub(" ", text)

@@ -15,7 +15,7 @@ from urllib.parse import quote as urlquote
 from rapidfuzz import fuzz
 
 import ai
-from arabic import normalize
+from arabic import join_waw, normalize
 from english import normalize_en, source_words_en
 from extract import _QUOTES, _QUOTES_SINGLE, candidates, claimed_kind, normalize_any
 from matcher import FOUND, Match, Matcher, verdict
@@ -178,7 +178,7 @@ def locate_span(words: list[tuple[str, str]], span_norm: str, quote_norm: str) -
 def word_diff(quote: str, source_norm_words: list[str], norm=normalize) -> tuple[list[dict], set[int]]:
     """Mark the user's words (as they typed them) as same/changed/extra, and
     return which source word indices were missing or different."""
-    typed = [(w, norm(w)) for w in quote.split()]
+    typed = [(w, norm(w)) for w in join_waw(quote).split()]
     typed = [(w, n) for w, n in typed if n]
     q = [n for _, n in typed]
     sm = SequenceMatcher(a=q, b=source_norm_words, autojunk=False)
