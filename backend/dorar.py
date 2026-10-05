@@ -22,7 +22,8 @@ API = "https://dorar.net/dorar_api.json?skey="
 SEARCH_PAGE = "https://dorar.net/hadith/search?q="
 LABELS = {"الراوي": "narrator", "المحدث": "scholar", "المصدر": "source",
           "الصفحة أو الرقم": "page", "خلاصة حكم المحدث": "grading"}
-_WEAK = re.compile(r"ضعيف|موضوع|باطل|منكر|لا أصل|ليس له أصل|كذب|لا يصح|لا يثبت|واه|مكذوب|شاذ|متروك")
+_WEAK = re.compile(r"ضعيف|موضوع|باطل|منكر|لا أصل|ليس له أصل|كذب|لا يصح|لم يصح|ليس بصحيح|غير صحيح|ليس بحديث"
+                   r"|لا يثبت|لم يثبت|واه|مكذوب|شاذ|متروك")
 _STRONG = re.compile(r"صحيح|حسن|ثابت|جيد")
 
 
@@ -49,9 +50,11 @@ def parse(result_html: str) -> list[dict]:
 
 
 def status(grading: str) -> str:
+    """Colour hint only; the ruling itself is always shown verbatim. A ruling that the meaning is
+    sound ("معناه صحيح") says nothing about the wording, so it is not shown as authentic."""
     if _WEAK.search(grading):
         return "weak"
-    if _STRONG.search(grading):
+    if _STRONG.search(grading) and "معناه" not in grading:
         return "strong"
     return "other"
 

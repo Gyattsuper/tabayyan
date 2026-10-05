@@ -78,7 +78,11 @@ check("dorar: parses scholar, source, page and ruling",
       and items[0]["page"] == "72" and items[0]["grading"].startswith("ضعيف"))
 check("dorar: weak and authentic rulings told apart",
       dorar.status(items[0]["grading"]) == "weak" and dorar.status("صحيح لغيره") == "strong"
-      and dorar.status("إسناده ضعيف") == "weak" and dorar.status("لا أصل له") == "weak")
+      and dorar.status("إسناده ضعيف") == "weak" and dorar.status("لا أصل له") == "weak"
+      and dorar.status("رفعه إلى النبي صلى الله عليه وسلم ليس بصحيح") == "weak"
+      and dorar.status("هذا وإن لم يصح لفظه ولا سنده فمعناه صحيح") == "weak"
+      and dorar.status("ليس بحديث، لكن معناه صحيح") == "weak" and dorar.status("[لم يصح]") == "weak"
+      and dorar.status("معناه صحيح") == "other")
 check("dorar: only results that contain the quote are kept",
       dorar._contains("اطلبوا العلم ولو في الصين", items[0]["text"])
       and not dorar._contains("اطلبوا العلم ولو في الصين", items[1]["text"]))
