@@ -1,4 +1,4 @@
-import { checkImage, checkText, getLang } from "./config.js";
+import { checkImage, checkText, getLang, withDorar } from "./config.js";
 
 const MENU_ID = "tabayyan-check";
 const IMAGE_MENU_ID = "tabayyan-check-image";
@@ -26,7 +26,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const lang = await getLang();
   await run(tab.id, (l, img) => globalThis.TabayyanPanel.loading(l, img), [lang, isImage]);
   try {
-    const data = isImage ? await checkImage(info.srcUrl, lang) : await checkText(text, lang);
+    const data = await withDorar(isImage ? await checkImage(info.srcUrl, lang) : await checkText(text, lang));
     await run(tab.id, (d) => globalThis.TabayyanPanel.show(d), [data]);
   } catch (e) {
     const msg = isImage && e && !/^HTTP/.test(e.message) ? e.message : null;

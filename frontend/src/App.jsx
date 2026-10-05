@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ImageButton, Learn, ResultActions, X, checkImage } from "./extras.jsx";
+import { DorarRulings, ImageButton, Learn, ResultActions, X, checkImage } from "./extras.jsx";
 import { AboutView, HistoryView, Icon, MythsView, NAV, SearchView, ToolsView, V, addHistory } from "./views.jsx";
 
 const API = import.meta.env.VITE_API_URL || "";
@@ -197,6 +197,10 @@ function Result({ r, t, lang, aiOn }) {
         <ul className="warnings">
           {r.warnings.map((w, i) => <li key={i}>{w}</li>)}
         </ul>
+      )}
+
+      {r.verdict === "not_found" && r.quote_lang === "ar" && r.claimed !== "quran" && (
+        <DorarRulings key={r.quote} quote={r.quote} lang={lang} />
       )}
 
       {m && (

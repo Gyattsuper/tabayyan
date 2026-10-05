@@ -37,3 +37,17 @@ export async function checkImage(src, lang) {
   if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
   return data;
 }
+
+// For texts not in the nine collections, add the scholars' rulings from the Dorar al-Saniyyah
+// encyclopedia. Best effort: a failure leaves the result as it was.
+export async function withDorar(data) {
+  const base = await apiBase();
+  await Promise.all((data.results || []).map(async (r) => {
+    if (r.verdict !== "not_found" || r.quote_lang !== "ar" || r.claimed === "quran") return;
+    try {
+      const res = await fetch(`${base}/api/dorar?q=${encodeURIComponent(r.quote)}`);
+      if (res.ok) r.dorar = await res.json();
+    } catch { /* ignore */ }
+  }));
+  return data;
+}

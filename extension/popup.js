@@ -1,4 +1,4 @@
-import { checkText, getLang, setLang } from "./config.js";
+import { checkText, getLang, setLang, withDorar } from "./config.js";
 
 const text = document.getElementById("text");
 const go = document.getElementById("go");
@@ -56,7 +56,7 @@ async function check() {
   go.disabled = true;
   out.innerHTML = `<p class="msg">${str(lang).loading}</p>`;
   try {
-    const data = await checkText(value, lang);
+    const data = await withDorar(await checkText(value, lang));
     out.innerHTML = renderAll(data);
   } catch {
     out.innerHTML = `<p class="msg err">${str(lang).netError}</p>`;

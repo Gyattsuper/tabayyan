@@ -426,6 +426,15 @@ dd.g-weak { color: var(--missing); }
 }
 .mini.wa { color: #fff; background: #1f9d55; border-color: #1f9d55; }
 
+.dorar { margin-top: 18px; }
+.dorar h3 { margin: 0 0 6px; font-size: 16px; }
+.dorar ul { list-style: none; margin: 0; padding: 0; }
+.dorar-item { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.dorar-item:last-child { border-bottom: 0; }
+.dorar-text { margin: 0; font-family: var(--text); font-size: 19px; line-height: 1.9;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.dorar-meta { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.grade-pill.g-other { color: var(--ink); background: #eef2f7; }
 .alts, .reply { margin-top: 14px; }
 .alt {
   margin-top: 10px;

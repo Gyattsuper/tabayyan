@@ -10,6 +10,7 @@
     ar: {
       dir: "rtl",
       found: "موجود في المصادر", partial: "مطابق جزئيًا", not_found: "لم نجده في المصادر",
+      dorar: "خارج الكتب التسعة: أحكام العلماء (الدرر السنية)",
       weak: "موجود لكنه ضعيف", disputed: "موجود ومختلف في درجته", misattributed: "موجود لكن نسبته خاطئة",
       athar: "قول منسوب لغير النبي ﷺ", foundEn: "يطابق ترجمة معروفة", partialEn: "قريب من ترجمة معروفة",
       inText: "ما في النص", correct: "النص الصحيح", source: "النص في المصدر", open: "افتح المصدر",
@@ -24,6 +25,7 @@
     en: {
       dir: "ltr",
       found: "Found in the sources", partial: "Partial match", not_found: "Not found in the sources",
+      dorar: "Outside the nine collections: scholars' rulings (Dorar al-Saniyyah)",
       weak: "Found, but graded weak", disputed: "Found, grading disputed", misattributed: "Found, but wrongly attributed",
       athar: "Attributed to someone other than the Prophet ﷺ", foundEn: "Matches a known translation",
       partialEn: "Close to a known translation",
@@ -84,6 +86,11 @@
         html += `<p class="t-grades">${m.grades.map((g) => `${esc(g.scholar)}: <b>${esc(g.grade)}</b>`).join(" , ")}</p>`;
       html += `<a class="t-link" href="${esc(m.link)}" target="_blank" rel="noreferrer">${t.open}</a>`;
     }
+    if (r.dorar && r.dorar.items && r.dorar.items.length) {
+      html += `<p class="t-label">${t.dorar}</p>` + r.dorar.items.map((it) =>
+        `<p class="t-grades" dir="rtl"><b class="${it.status === "strong" ? "g-ok" : it.status === "weak" ? "g-bad" : ""}">${esc(it.grading)}</b> · ${esc(it.scholar)}${it.source ? ` · ${esc(it.source)}` : ""}</p>`).join("")
+        + `<a class="t-link" href="${esc(r.dorar.link)}" target="_blank" rel="noreferrer">dorar.net</a>`;
+    }
     return html + "</div>";
   }
 
@@ -96,7 +103,7 @@
     .t-src{margin:0;font-family:"Amiri","Traditional Arabic","Noto Naskh Arabic",serif;font-size:20px;line-height:2}
     .t-src.en{font-family:Georgia,serif;font-size:16px;line-height:1.7}
     .t-src .ctx{color:#9aa6b8}.t-src .fix{background:linear-gradient(transparent 55%,rgba(48,208,200,.45) 55%);font-weight:700}
-    .t-grades{font-size:13px;color:#5d6b82;margin:6px 0}.t-link{font-size:13px;color:#193565}`;
+    .t-grades{font-size:13px;color:#5d6b82;margin:6px 0}.g-ok{color:#16875b}.g-bad{color:#c23b3b}.t-link{font-size:13px;color:#193565}`;
 
   function renderAll(data) {
     const t = str(data.lang);

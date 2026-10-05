@@ -10,6 +10,12 @@ export const X = {
     reading: "نقرأ النص من الصورة…",
     readFrom: "النص الذي قرأناه من الصورة. راجعه، وإن كان فيه خطأ في القراءة فصحّحه ثم اضغط تحقّق.",
     imageTip: "يمكنك أيضًا لصق صورة هنا مباشرة.",
+    dorarTitle: "خارج الكتب التسعة: أحكام العلماء",
+    dorarLoading: "نبحث في موسوعة الدرر السنية…",
+    dorarNone: "لم نجده كذلك في موسوعة الدرر السنية.",
+    dorarNote: "منقولة كما هي من موسوعة الدرر السنية (نحو 300 ألف حديث بأحكام المحدثين). ارجع إلى أهل العلم في الترجيح بينها.",
+    dorarOpen: "عرض في الدرر السنية",
+    dorarIn: (src, page) => `في «${src}»${page ? `، ${page}` : ""}`,
     findAlt: "ابحث عن نص صحيح بديل",
     findingAlt: "نبحث في المصادر عن نص صحيح قريب المعنى…",
     altTitle: "نصوص صحيحة قريبة المعنى",
@@ -74,6 +80,12 @@ export const X = {
     reading: "Reading the text in the image…",
     readFrom: "The text we read from the image. Check it, and if anything was misread, correct it and press Check.",
     imageTip: "You can also paste an image here directly.",
+    dorarTitle: "Outside the nine collections: scholars' rulings",
+    dorarLoading: "Searching the Dorar al-Saniyyah encyclopedia…",
+    dorarNone: "Not found in the Dorar al-Saniyyah encyclopedia either.",
+    dorarNote: "Quoted as given by the Dorar al-Saniyyah encyclopedia (about 300,000 hadiths with scholars' rulings). Ask a scholar about weighing between them.",
+    dorarOpen: "Open in Dorar al-Saniyyah",
+    dorarIn: (src, page) => `in “${src}”${page ? `, ${page}` : ""}`,
     findAlt: "Find an authentic alternative",
     findingAlt: "Searching the sources for an authentic text with a close meaning…",
     altTitle: "Authentic texts with a close meaning",
@@ -440,4 +452,46 @@ export async function shareCard(r, title, tone, lang) {
   a.download = "tabayyan.png";
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+// For a text not in the nine collections: what hadith scholars said about it, from the
+// Dorar al-Saniyyah encyclopedia (fetched after the result shows, so it never slows the check).
+export function DorarRulings({ quote, lang }) {
+  const x = X[lang];
+  const [st, setSt] = useState({ status: "loading" });
+  useEffect(() => {
+    let live = true;
+    fetch(`${API}/api/dorar?q=${encodeURIComponent(quote)}`)
+      .then((r) => r.json())
+      .then((d) => live && setSt({ status: "done", data: d }))
+      .catch(() => live && setSt({ status: "error" }));
+    return () => { live = false; };
+  }, [quote]);
+  if (st.status === "error") return null;
+  return (
+    <section className="dorar">
+      <h3>{x.dorarTitle}</h3>
+      {st.status === "loading" && <p className="muted">{x.dorarLoading}</p>}
+      {st.status === "done" && st.data.items.length === 0 && !st.data.error && <p className="muted">{x.dorarNone}</p>}
+      {st.status === "done" && st.data.items.length > 0 && (
+        <>
+          <ul>
+            {st.data.items.map((it, i) => (
+              <li key={i} className="dorar-item">
+                <p className="dorar-text" dir="rtl" lang="ar">{it.text}</p>
+                <p className="dorar-meta">
+                  <span className={`grade-pill g-${it.status}`} dir="rtl" lang="ar">{it.grading}</span>
+                  <span dir="rtl" lang="ar">{it.scholar}{it.source ? ` ${x.dorarIn(it.source, it.page)}` : ""}</span>
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="muted small">{x.dorarNote}</p>
+        </>
+      )}
+      {st.status === "done" && (
+        <a className="source-link" href={st.data.link} target="_blank" rel="noreferrer">{x.dorarOpen}</a>
+      )}
+    </section>
+  );
 }

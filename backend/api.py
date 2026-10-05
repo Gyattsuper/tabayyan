@@ -6,6 +6,8 @@
   POST /api/alternatives  {"text": "...", "lang"}  -> authentic texts with a related meaning
   POST /api/reply         {"result": {...}, "alternative": {...} | null, "lang"}  -> a polite reply to send
   GET  /api/daily?lang=   -> hadith of the day (from an-Nawawi's Forty)
+  GET  /api/dorar?q=      -> scholars' rulings from the Dorar al-Saniyyah encyclopedia, for texts not in
+                             the nine collections
   GET  /api/search?q=&lang=&kind=quran|hadith&all=0|1  -> verses and hadiths matching a topic
   GET  /api/health
 
@@ -19,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import ai
+import dorar
 import extras
 from matcher import Matcher
 from verify import verify
@@ -108,6 +111,11 @@ def search(q: str = "", lang: str = "ar", kind: str = "", all: int = 0):
 @app.get("/api/daily")
 def daily(lang: str = "ar"):
     return extras.daily(matcher, _lang(lang))
+
+
+@app.get("/api/dorar")
+def dorar_rulings(q: str = ""):
+    return dorar.lookup(q)
 
 
 # Serve the built web app from the same server (one link for the live demo).
