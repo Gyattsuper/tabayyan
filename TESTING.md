@@ -140,6 +140,10 @@ gained a section with scholars' rulings from the Dorar al-Saniyyah encyclopedia 
 nine collections (see `SOURCES.md`). The same group ran a second round on Oct 5 and described the app as
 excellent.
 
+Found the same evening: «ان الله و ملائكته يصلون على النبي», typed with «و» as a separate word, was
+"not found" (the alternatives search even returned the verse itself). A separately typed «و» is now
+joined to the next word before matching, and Al-Ahzab 33:56 is found. Covered by a feature test.
+
 ## Known limits
 
 - "Not found" covers only the indexed collections. The interface says so every time and does not
