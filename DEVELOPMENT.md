@@ -48,7 +48,7 @@ The work done before Oct 4 is listed here openly so judges can see what existed 
 |---|---|
 | Oct 4 | User testing: eight people (four sheikhs, three students of Islamic sciences, and the friend who organized it) tried the live site on real messages and described the results as accurate and useful. No specific problems were reported. Written up in `TESTING.md`. |
 | Oct 4 | The presentation was moved into the challenge's official participant template. |
-| Oct 5 | Rulings outside the nine collections (`118ca4e`): a tester's friend checked «لا تجمع أمتي على ضلالة» and got "not found", and suggested a larger library. The narration in the nine books differs («إن أمتي لا تجتمع…», «إن الله لا يجمع أمتي…» with an inserted narrator's doubt), so the result now also shows scholars' rulings from the Dorar al-Saniyyah encyclopedia (300,000 hadiths, recommended in the challenge's reference framework), on the site and in the extension. Shamela was considered; it has no API and no gradings. |
+| Oct 5 | Rulings outside the nine collections (`118ca4e`): a tester checked «لا تجمع أمتي على ضلالة», got "not found", and suggested the Shamela library. The narration in the nine books differs («إن أمتي لا تجتمع…», «إن الله لا يجمع أمتي…» with an inserted narrator's doubt), so the result now also shows scholars' rulings from the Dorar al-Saniyyah encyclopedia (300,000 hadiths, recommended in the challenge's reference framework), on the site and in the extension. Shamela was considered; it has no API and no gradings. |
 
 ## Main design decisions
 
