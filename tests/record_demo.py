@@ -7,8 +7,9 @@ Usage: python tests/record_demo.py <work_dir>
 Everything shown is the real app running against the local API. This workspace has no Claude API
 key, so the parts that need Claude (quote extraction, explanations, image reading, alternatives,
 replies, topic search) are answered with responses captured from the live site
-(tabayyan.onrender.com, Claude enabled). Verdicts, references and highlighted words still come
-from the local server; only the Claude-written text is taken from the capture.
+(tabayyan.onrender.com, Claude enabled), and so are the Dorar al-Saniyyah rulings (this workspace
+cannot reach dorar.net). Verdicts, references and highlighted words still come from the local
+server; only the Claude-written text and Dorar's rulings are taken from the capture.
 """
 import base64
 import json
@@ -127,6 +128,11 @@ def on_api(route, request):
         return fulfill(route, json.dumps(LIVE["B"], ensure_ascii=False), 2.4)
     if url.endswith("/api/reply"):
         return fulfill(route, json.dumps(LIVE["C"], ensure_ascii=False), 2.2)
+    if "/api/dorar" in url:
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("q", [""])[0]
+        if "DORAR" in LIVE and q == LIVE["checks"]["A"]["quotes"][0]:
+            return fulfill(route, json.dumps(LIVE["DORAR"], ensure_ascii=False), 1.2)
+        return fulfill(route, json.dumps({"items": [], "link": "", "error": True}), 0)
     if "/api/search" in url and urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("q") == [LIVE["G_QUERY"]]:
         return fulfill(route, SEARCH, 2.0)
     route.continue_()
@@ -210,7 +216,7 @@ with sync_playwright() as p:
         "رسائل كثيرة تنتشر فيها أحاديث مكذوبة،",
         "وآيات تغيّرت كلماتها، وصور يُنسب فيها كلام إلى النبي ﷺ دون أصل.",
         "<span style='color:#30D0C8'>والتحقق منها يدويًا بطيء ويحتاج خبرة.</span>"]))
-    pg.wait_for_timeout(4300)
+    pg.wait_for_timeout(3900)
 
     # 2. A saying with no source: alternative + polite reply
     pg.goto(API + "/#/check")
@@ -219,7 +225,10 @@ with sync_playwright() as p:
     caption("الصق الرسالة كما وصلتك", 1200)
     type_check(LIVE["A_TEXT"])
     scroll_to(top_of(".result", 0, 120))
-    caption("قول مشهور لا أصل له في المصادر: ينبَّه ألا يُنشر منسوبًا إلى النبي ﷺ", 3300)
+    caption("قول مشهور لا أصل له في الكتب التسعة: ينبَّه ألا يُنشر منسوبًا إلى النبي ﷺ", 2800)
+    pg.wait_for_selector(".dorar-item", timeout=15000)
+    scroll_to(top_of(".dorar", 0, 150))
+    caption("وأحكام العلماء عليه من موسوعة الدرر السنية، منقولة كما هي", 3600)
     caption("")
     move_to(pg.get_by_role("button", name="ابحث عن نص صحيح بديل"))
     pg.wait_for_selector(".alts .alt")
@@ -235,9 +244,9 @@ with sync_playwright() as p:
     caption("")
     type_check(LIVE["D_TEXT"], delay=6)
     scroll_to(top_of(".result", 0))
-    caption("حديثان وسط تحية ودعاء: يستخرجهما Claude، والحكم من المصادر. الأول في صحيح البخاري", 3900)
+    caption("حديثان وسط تحية ودعاء: يستخرجهما Claude، والحكم من المصادر. الأول في صحيح البخاري", 3400)
     scroll_to(top_of(".result", 1))
-    caption("الثاني سقطت منه كلمة «لك»، فتظهر في النص الصحيح من جامع الترمذي", 3600)
+    caption("الثاني سقطت منه كلمة «لك»، فتظهر في النص الصحيح من جامع الترمذي", 3200)
 
     # 4. A screenshot
     caption("")
@@ -293,7 +302,7 @@ with sync_playwright() as p:
     nav("myths")
     caption("قائمة بأقوال منتشرة لا أصل لها في الكتب التسعة", 2700)
     nav("learn")
-    caption("وحديث اليوم من الأربعين النووية، ودروس قصيرة", 2400)
+    caption("وحديث اليوم من الأربعين النووية، ودروس قصيرة", 2000)
 
     # 7. Phone layout
     caption("")

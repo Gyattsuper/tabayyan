@@ -133,6 +133,13 @@ report specific problems, and no detailed notes were recorded, so this round is 
 measurement. Next round: a short list of questions per result (was the verdict right, was the reference
 right, was the explanation clear), with each answer recorded.
 
+One tester checked «لا تجمع أمتي على ضلالة» and got "not found": the nine collections have it only in
+other wordings (Ibn Majah 3950 «إن أمتي لا تجتمع على ضلالة», and Tirmidhi 2167 with the narrator's
+doubt «أو قال أمة محمد» inside the sentence). He suggested a larger library. On Oct 5 the result
+gained a section with scholars' rulings from the Dorar al-Saniyyah encyclopedia for texts outside the
+nine collections (see `SOURCES.md`). The same group ran a second round on Oct 5 and described the app as
+excellent.
+
 ## Known limits
 
 - "Not found" covers only the indexed collections. The interface says so every time and does not
