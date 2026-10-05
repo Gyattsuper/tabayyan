@@ -34,6 +34,9 @@ partial match in English may just be a different translation, and the result say
   spot a fabricated forwarded message.
 - **Search the sources:** type a topic (parents, patience, neighbors) and get authentic verses and hadiths about
   it. With the AI service, Claude rewrites the topic into search phrases and drops results that only share a word with it; every result is from the sources.
+- **Rulings outside the nine books:** when a text is not in the nine collections, the result shows what
+  hadith scholars said about it, from the Dorar al-Saniyyah encyclopedia (about 300,000 hadiths with
+  rulings), quoted exactly with a link to the source.
 - **Popular unsourced sayings:** a list of sayings that spread as hadiths but are not in the nine books; tap one
   to see the check.
 - **Share as image:** any result can be saved or shared as a square card for WhatsApp status or social media.
@@ -54,6 +57,7 @@ message ──► extract quote ──► search ──► align ──► verdi
 - `backend/verify.py`: builds results in Arabic or English, word diffs, gradings, warnings
 - `backend/ai.py`: Claude API for extraction and explanations, with guards and fallback
 - `backend/extras.py`: images, authentic alternatives, polite replies, hadith of the day
+- `backend/dorar.py`: scholars' rulings from Dorar al-Saniyyah for texts outside the nine collections
 - `backend/api.py`: FastAPI server, also serves the web app
 - `frontend/`: React web app
 - `extension/`: Chrome extension (right-click "تحقّق مع تبيّن", or the toolbar popup), Arabic or English
@@ -78,7 +82,7 @@ Every number has a 95% confidence interval, and every miss is explained, in `TES
 pip install -r requirements.txt
 ./fetch_data.sh                      # downloads the datasets and builds the index (about 1.5 min)
 python tests/run_tests.py            # 22 cases
-python tests/run_feature_tests.py    # 14 checks for images, alternatives, replies
+python tests/run_feature_tests.py    # 17 checks for images, alternatives, replies, Dorar rulings
 cd frontend && npm install && npm run build && cd ..
 cd backend && uvicorn api:app --port 8000
 # open http://localhost:8000

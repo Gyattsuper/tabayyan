@@ -29,11 +29,26 @@ Zubair Ali Zai, Muhyi al-Din Abd al-Hamid, Darussalam, Ahmad Shakir). Hadiths in
 two Sahihs are labeled صحيح by virtue of the collection. Where scholars differ, all
 gradings are shown rather than picking one.
 
+## Rulings outside the nine collections
+
+When a text is not in the nine collections, Tabayyan asks the hadith encyclopedia of
+**Dorar al-Saniyyah** (dorar.net, about 300,000 hadiths with the ruling of each hadith scholar)
+through its public search API (`dorar.net/dorar_api.json`). Dorar is listed among the recommended
+sources in the challenge's reference framework. Only results whose text contains the quote are
+kept, and the scholar, book, page and ruling are shown exactly as Dorar gives them, with a link to
+Dorar's own page. No language model is involved in this step. If Dorar cannot be reached, the
+section is simply not shown.
+
+The Shamela library (shamela.ws) is also in the reference framework, but it has no public API and
+its books carry no structured gradings, so it is not queried; adding selected books from it is
+planned (see the deck's plan).
+
 ## Known limits
 
 - "Not found" means not found in the collections above. It does not by itself mean a
   text is fabricated; many texts exist in other books (e.g. Musnad Ahmad, al-Bayhaqi).
-  The interface states this and refers the user to scholars.
+  The interface states this, shows any rulings found in Dorar al-Saniyyah, and refers the user
+  to scholars.
 - English quotes can only be matched to the translations listed above. A quote from another
   translation may show as a partial match; the result says this may just be a different translation.
 - Sayings of companions and scholars are mostly outside these books. When a message attributes a
