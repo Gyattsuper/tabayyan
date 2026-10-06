@@ -36,6 +36,8 @@ FOUND = 90      # near-identical wording
 PARTIAL = 70    # same text, noticeably different wording
 MIN_WORDS = 3   # quotes shorter than this are too ambiguous to judge
 MIN_COVERAGE = 0.6  # share of the quote's content words that must appear in the source
+MIN_RUN = 4         # a run of at least 4 words copied exactly from the source...
+RUN_SHARE = 0.6     # ...making up most of the quote
 MIN_SHARED = 3      # and at least this many of them, so a 3-word saying sharing 2 common words isn't "partial"
 
 # Particles and filler words. Two texts sharing only these are not the same text.
@@ -70,6 +72,22 @@ class Match:
     exact: bool = False    # every word of the quote matches the source in order, nothing changed or skipped
     shared: int = 0        # number of the quote's content words present in the span
     english: bool = False  # matched against an English translation (record has translator, en_text, en_norm)
+    run: int = 0           # longest run of consecutive quote words found word for word in the span
+    qlen: int = 0          # words in the quote
+
+
+def longest_run(q: str, span: str) -> int:
+    """Longest run of consecutive words shared, in order, by the quote and the span."""
+    a, b = q.split(), span.split()
+    best, prev = 0, [0] * (len(b) + 1)
+    for x in a:
+        cur = [0] * (len(b) + 1)
+        for j, y in enumerate(b, 1):
+            if x == y:
+                cur[j] = prev[j - 1] + 1
+                best = max(best, cur[j])
+        prev = cur
+    return best
 
 
 def is_exact(q: str, span: str) -> bool:
@@ -190,7 +208,7 @@ class Matcher:
             score, span = self._best_span(q, r[field])
             if score >= PARTIAL - 15:
                 results.append(Match(r, score, span, coverage(q, span, stop), is_exact(q, span),
-                                     shared_words(q, span, stop), english))
+                                     shared_words(q, span, stop), english, longest_run(q, span), len(q.split())))
         results.sort(key=_rank_key, reverse=True)
         # The same verse can match through several translations; keep its best one.
         seen, out = set(), []
@@ -210,6 +228,11 @@ def verdict(matches: list[Match]) -> str:
     if m.exact and m.coverage == 1.0:
         return "found"
     if m.score >= PARTIAL and m.coverage >= MIN_COVERAGE and m.shared >= MIN_SHARED:
+        return "partial"
+    # A short verse or hadith with words added to it («إن الله مع الصابرين والمحسنين»): most of the
+    # quote is the source word for word, so show the correct text, even though few of its words
+    # are distinctive enough to count above.
+    if (not m.english and m.score >= PARTIAL and m.run >= MIN_RUN and m.run >= RUN_SHARE * m.qlen):
         return "partial"
     return "not_found"
 

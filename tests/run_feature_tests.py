@@ -102,5 +102,11 @@ check("evidence request: points to the source search, invents nothing",
 out = verify(m, "قال رسول الله ﷺ: «إنما الأعمال بالنيات»", "ar")
 check("a plain quote is not treated as a question", "request" not in out and out["results"][0]["verdict"] == "found")
 
+# A short verse with a word added: show the correct verse, not "not found"
+r = verify(m, "قال تعالى: «إن الله مع الصابرين والمحسنين»", "ar")["results"][0]
+check("added word to a short verse: partial, Al-Baqarah 153", r["verdict"] == "partial" and "البقرة" in r["match"]["ref"])
+r = verify(m, "«حب الوطن من الإيمان»", "ar")["results"][0]
+check("a short unsourced saying stays not found", r["verdict"] == "not_found")
+
 print(f"\n{passed}/{passed + failed} passed")
 sys.exit(1 if failed else 0)
