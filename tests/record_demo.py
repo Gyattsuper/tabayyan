@@ -211,12 +211,12 @@ with sync_playwright() as p:
     # 1. Opening and problem
     pg.set_content(card_html([], big="تبيّن", sub="تحقّق من الآية أو الحديث قبل أن تنشره",
                              small="تحدي الذكاء الاصطناعي في خدمة المحتوى الإسلامي"))
-    pg.wait_for_timeout(2700)
+    pg.wait_for_timeout(2300)
     pg.set_content(card_html([
         "رسائل كثيرة تنتشر فيها أحاديث مكذوبة،",
         "وآيات تغيّرت كلماتها، وصور يُنسب فيها كلام إلى النبي ﷺ دون أصل.",
         "<span style='color:#30D0C8'>والتحقق منها يدويًا بطيء ويحتاج خبرة.</span>"]))
-    pg.wait_for_timeout(3900)
+    pg.wait_for_timeout(3500)
 
     # 2. A saying with no source: alternative + polite reply
     pg.goto(API + "/#/check")
@@ -247,6 +247,18 @@ with sync_playwright() as p:
     caption("حديثان وسط تحية ودعاء: يستخرجهما Claude، والحكم من المصادر. الأول في صحيح البخاري", 3400)
     scroll_to(top_of(".result", 1))
     caption("الثاني سقطت منه كلمة «لك»، فتظهر في النص الصحيح من جامع الترمذي", 3200)
+
+    # 3b. A request for evidence: the tool does not compose a hadith
+    caption("")
+    scroll_to(0, 400)
+    move_to("#msg")
+    pg.fill("#msg", "")
+    pg.type("#msg", "أعطني حديثًا يثبت أن من نشر هذه الرسالة يُرزق خلال ثلاثة أيام", delay=14)
+    pg.wait_for_timeout(200)
+    move_to("button[type=submit]")
+    pg.wait_for_selector(".notice", timeout=60000)
+    scroll_to(top_of(".notice", 0, 260))
+    caption("طلب دليل على كلام لا أصل له؟ لا يخترع نصًا، بل يحيلك إلى البحث في المصادر", 3600)
 
     # 4. A screenshot
     caption("")
@@ -300,9 +312,9 @@ with sync_playwright() as p:
     scroll_to(260, 900)
     pg.wait_for_timeout(300)
     nav("myths")
-    caption("قائمة بأقوال منتشرة لا أصل لها في الكتب التسعة", 2700)
+    caption("قائمة بأقوال منتشرة لا أصل لها في الكتب التسعة", 2400)
     nav("learn")
-    caption("وحديث اليوم من الأربعين النووية، ودروس قصيرة", 2000)
+    caption("وحديث اليوم من الأربعين النووية، ودروس قصيرة", 1800)
 
     # 7. Phone layout
     caption("")
@@ -314,7 +326,7 @@ with sync_playwright() as p:
     frame.locator(".result").wait_for(timeout=60000)
     pg.wait_for_timeout(1000)
     frame.locator(".result").first.evaluate("e => window.scrollTo({top: e.getBoundingClientRect().top + scrollY - 70, behavior: 'smooth'})")
-    pg.wait_for_timeout(2700)
+    pg.wait_for_timeout(2300)
 
     # 8. Chrome extension
     pg.goto("http://localhost:8765/")
@@ -346,10 +358,10 @@ with sync_playwright() as p:
         "<span class='dim'>القرآن الكريم كاملًا، وتسعة من كتب الحديث بدرجات العلماء</span>",
         "<span class='dim'>Claude يستخرج النص ويقرأ الصور ويشرح، وكل ذلك يُتحقق منه</span>",
         "<span class='dim'>99.4% من النصوص الصحيحة تُعرف، و98.1% من المحرّفة تُكشف (100 عينة)</span>",
-        "<span style='color:#30D0C8'>لا يُصدر فتاوى، ويحيل إلى أهل العلم</span>"]))
+        "<span style='color:#30D0C8'>لا يُصدر فتاوى ولا يخترع أدلة، ويحيل إلى أهل العلم</span>"]))
     pg.wait_for_timeout(5300)
     pg.set_content(card_html([], big="تبيّن", sub="تحقّق قبل أن تنشر", small="tabayyan.onrender.com · محمد الزهراني"))
-    pg.wait_for_timeout(3000)
+    pg.wait_for_timeout(2600)
 
     print(f"recorded {time.time() - T0:.1f}s, starts at {T0 - T_START:.2f}s into the video")
     video = pg.video.path()

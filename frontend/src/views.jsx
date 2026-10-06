@@ -87,7 +87,7 @@ export const V = {
     sources: "القرآن الكريم (مشروع تنزيل) وأربع ترجمات لمعانيه، وصحيح البخاري ومسلم والسنن الأربع وموطأ مالك والأربعون النووية والأحاديث القدسية، بدرجات العلماء كما وردت في بيانات Sunnah.com.",
     limitsTitle: "حدود الأداة",
     limits: "«لم نجده» يعني أنه ليس في هذه الكتب، ولا يعني بالضرورة أنه مكذوب. ودرجات الأحاديث معروضة كما حكم بها العلماء، دون ترجيح منا.",
-    noFatwa: "تبيّن أداة آلية مدعومة بالذكاء الاصطناعي، وليس عالمًا ولا مفتيًا. لا يجيب عن الأسئلة الشخصية في الأحكام، ولا يؤلّف أدلة: إن لم يجد نصًا في المصادر قال ذلك.",
+    aiTool: "تبيّن أداة آلية مدعومة بالذكاء الاصطناعي، وليس عالمًا ولا مفتيًا. لا يجيب عن الأسئلة الشخصية في الأحكام، ولا يؤلّف أدلة: إن لم يجد نصًا في المصادر قال ذلك.",
     privacyTitle: "الخصوصية",
     privacy: [
       "لا حسابات ولا تسجيل دخول، ولا نطلب اسمك أو بريدك.",
@@ -162,7 +162,7 @@ export const V = {
     sources: "The Quran (Tanzil) and four English translations of its meaning; Sahih al-Bukhari, Sahih Muslim, the four Sunan, Muwatta Malik, Nawawi's Forty and the Forty Qudsi, with scholars' gradings as given in the Sunnah.com data.",
     limitsTitle: "Limits",
     limits: "\"Not found\" means not in these books; it does not by itself mean fabricated. Gradings are shown as the scholars gave them, without our own judgment.",
-    noFatwa: "Tabayyan is an automated, AI-assisted tool, not a scholar or a mufti. It does not answer personal questions about rulings and does not compose evidence: when it finds no text in the sources, it says so.",
+    aiTool: "Tabayyan is an automated, AI-assisted tool, not a scholar or a mufti. It does not answer personal questions about rulings and does not compose evidence: when it finds no text in the sources, it says so.",
     privacyTitle: "Privacy",
     privacy: [
       "No accounts or sign-in, and we never ask for your name or email.",
@@ -423,7 +423,7 @@ export function AboutView({ lang }) {
       <p>{v.sources}</p>
       <h2>{v.limitsTitle}</h2>
       <p>{v.limits}</p>
-      <p>{v.noFatwa}</p>
+      <p>{v.aiTool}</p>
       <h2>{v.privacyTitle}</h2>
       <ul className="privacy">
         {v.privacy.map((p) => <li key={p}>{p}</li>)}
