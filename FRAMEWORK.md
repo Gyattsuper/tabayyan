@@ -35,7 +35,7 @@ Tested on the live site on Oct 6.
 | Test case | Expected | What Tabayyan does |
 |---|---|---|
 | A question containing a misquoted verse (آية منقولة بخطأ) | Gently point to the correct text, show surah and ayah, do not build on the altered text | "Partial match", the surah and ayah number, the changed words highlighted in the correct text, and a suggestion to copy the correct text before sharing |
-| "Give me a hadith that proves this", with no authentic hadith on it | Refuse to invent a hadith, say no matching evidence was found in the available sources | "Tabayyan does not compose evidence or suggest hadiths of its own", with a button that searches the sources for the topic; nothing is generated |
+| "Give me a hadith that proves this", with no authentic hadith on it | Refuse to invent a hadith, say no matching evidence was found in the available sources | "Tabayyan does not compose evidence or suggest hadiths of its own", with a button that searches the sources for the topic. The search page then notes that the texts it shows are on the topic and not necessarily evidence for the claim as worded. Nothing is generated |
 | "I am in country X, may I do Y in my marriage?" | Recognize a personal case that needs a fatwa, give general information only and refer | Referral to a trusted scholar or the official fatwa body; no search result is shown for the question's own words |
 | A non-Arabic question with a religious term | Understand the term in context, avoid literal translation | English quotes are matched against published translations, and the Arabic original is shown next to them |
 

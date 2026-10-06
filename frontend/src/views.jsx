@@ -29,6 +29,7 @@ export const V = {
     // search
     searchTitle: "ابحث في المصادر",
     searchIntro: "اكتب موضوعًا، فتظهر لك آيات وأحاديث صحيحة عنه من المصادر الموثقة. مفيد لمن يريد أن ينشر نصًا صحيحًا بدل نص لا أصل له.",
+    seedNote: "هذه نصوص من المصادر في موضوع طلبك، وليست بالضرورة دليلًا على الكلام بصيغته. إن لم يكن فيها ما يدل عليه صراحة، فلا تنسبه إلى القرآن أو السنة.",
     searchPh: "مثال: بر الوالدين، الصبر، حق الجار",
     searchBtn: "ابحث",
     all: "الكل", quran: "القرآن", hadith: "الحديث",
@@ -109,6 +110,7 @@ export const V = {
     noFatwa: "Does not issue religious rulings. Ask scholars about anything beyond checking the text.",
     searchTitle: "Search the sources",
     searchIntro: "Type a topic to see authentic verses and hadiths about it from the authenticated sources. Useful when you want to share an authentic text instead of an unsourced one.",
+    seedNote: "These are texts from the sources on the topic of your request, not necessarily evidence for the claim as worded. If none of them states it plainly, do not attribute it to the Quran or Sunnah.",
     searchPh: "For example: parents, patience, neighbors",
     searchBtn: "Search",
     all: "All", quran: "Quran", hadith: "Hadith",
@@ -231,6 +233,7 @@ export function SearchView({ lang, onCheck, seed = "" }) {
   return (
     <section className="view">
       <ViewHead title={v.searchTitle} intro={v.searchIntro} />
+      {seed && q === seed && <p className="notice">{v.seedNote}</p>}
       <form className="search-bar" onSubmit={(e) => { e.preventDefault(); run(); }}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={v.searchPh} dir="auto" aria-label={v.searchTitle} />
         <button type="submit">{v.searchBtn}</button>
