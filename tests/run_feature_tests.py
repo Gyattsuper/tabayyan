@@ -92,5 +92,15 @@ from verify import verify
 r = verify(m, "ان الله و ملائكته يصلون على النبي", "ar")["results"][0]
 check("loose waw: «و ملائكته» found as Al-Ahzab 56", r["verdict"] == "found" and "الأحزاب" in r["match"]["ref"])
 
+# Questions are not quotes: no "not found" for the question's words, and no made-up evidence
+out = verify(m, "انا في دولة اجنبية هل يجوز لي ان اتزوج بدون ولي", "ar")
+check("fatwa question: refers to scholars, no not-found result",
+      out.get("request") == "ruling" and not out["results"] and "الفتوى" in out["message"])
+out = verify(m, "اعطني حديثا يثبت ان الدعاء يوم الجمعة بعد العصر مستجاب دائما", "ar")
+check("evidence request: points to the source search, invents nothing",
+      out.get("request") == "evidence" and all(x["verdict"] != "not_found" for x in out["results"]))
+out = verify(m, "قال رسول الله ﷺ: «إنما الأعمال بالنيات»", "ar")
+check("a plain quote is not treated as a question", "request" not in out and out["results"][0]["verdict"] == "found")
+
 print(f"\n{passed}/{passed + failed} passed")
 sys.exit(1 if failed else 0)

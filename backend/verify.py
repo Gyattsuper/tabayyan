@@ -58,6 +58,10 @@ TEXT = {
                    "انقل النص الصحيح إن أردت نشره.",
         "partial_en": "النص قريب من ترجمة {translator} لـ{ref}، مع اختلاف في {count}.",
         "empty": "لم نجد في النص ما يمكن البحث عنه. الصق نص الآية أو الحديث نفسه، ثلاث كلمات على الأقل.",
+        "ruling": "يبدو أن هذا سؤال عن حكم شرعي. تبيّن يتحقق من الآيات والأحاديث المنقولة ولا يُفتي، "
+                  "فاسأل عالمًا موثوقًا أو جهة الفتوى الرسمية في بلدك (في السعودية: الرئاسة العامة للإفتاء، alifta.gov.sa).",
+        "evidence": "تبيّن لا يؤلّف أدلة ولا يقترح أحاديث من عنده. لتعرف ما ورد في موضوع ما، استخدم «ابحث في المصادر»: "
+                    "يعرض آيات وأحاديث من الكتب نفسها مع مراجعها، وإن لم يجد شيئًا قال ذلك ولم يخترع نصًا.",
     },
     "en": {
         "scope": "Searched: the Quran and nine hadith collections (Bukhari, Muslim, the four Sunan, "
@@ -90,6 +94,11 @@ TEXT = {
                    "correct text. Copy the correct text if you want to share it.",
         "partial_en": "This is close to the {translator} translation of {ref}, with {count}.",
         "empty": "There is nothing here we can search for. Paste the verse or hadith itself, at least three words.",
+        "ruling": "This looks like a question about a religious ruling. Tabayyan checks quoted verses and hadiths; "
+                  "it does not give fatwas. Please ask a trusted scholar or the official fatwa body in your country.",
+        "evidence": "Tabayyan does not compose evidence or suggest hadiths of its own. To see what the sources say on "
+                    "a topic, use \"Search the sources\": it shows verses and hadiths from the books themselves, with "
+                    "references, and says so when it finds nothing instead of inventing a text.",
     },
 }
 
@@ -332,6 +341,36 @@ def template_explanation(res: dict) -> str:
 
 _RANK = {"found": 2, "partial": 1, "not_found": 0}
 
+# Requests the tool should not answer by itself: a personal ruling (fatwa), or "give me a hadith
+# that proves X". These get a note that points to scholars or to the source search instead.
+_RULING = re.compile(
+    r"هل يجوز|هل يحل|هل يحرم|هل يصح (?:أن|ان)|ما حكم|ما الحكم|أفتوني|افتوني|"
+    r"(?:حلال|حرام) (?:ولا|أم|ام|أو|او) (?:حلال|حرام)|"
+    r"\bis it (?:allowed|permissible|halal|haram)\b|\bam i allowed\b|\bwhat is the ruling\b|\bfatwa\b", re.I)
+_EVIDENCE = re.compile(
+    r"(?:أعطني|اعطني|أعطيني|اعطيني|هات|ابغى|أبغى|أبي|ابي|أريد|اريد|اذكر)\s+(?:لي\s+)?(?:حديثا|حديثًا|حديث|آية|اية|دليلا|دليلًا|دليل)|"
+    r"(?:حديث|حديثا|حديثًا|دليل|آية)\s+(?:يثبت|تثبت|يدل|تدل)|"
+    r"\bgive me (?:a |an )?(?:hadith|verse|evidence|proof)\b|\b(?:hadith|verse|evidence|proof) (?:that proves|proving)\b", re.I)
+
+
+_LEAD = re.compile(r"^(?:\s|[:،,.]|(?:يثبت|تثبت|يدل|تدل|على|عن|في|أن|ان|هذا|الكلام|that|for|about|on|proves|proving)(?=\s|$))+", re.I)
+
+
+def request_topic(message: str) -> str:
+    """The topic of a "give me a hadith that proves X" request: X."""
+    m = _EVIDENCE.search(message)
+    rest = message[m.end():] if m else message
+    return _LEAD.sub("", rest).strip(" ؟?.!")[:200]
+
+
+def request_kind(message: str) -> str | None:
+    """'evidence' or 'ruling' when the message asks for something other than checking a quote."""
+    if _EVIDENCE.search(message):
+        return "evidence"
+    if _RULING.search(message):
+        return "ruling"
+    return None
+
 
 def verify(matcher: Matcher, message: str, lang: str = "ar") -> dict:
     lang = "en" if lang == "en" else "ar"
@@ -374,6 +413,14 @@ def verify(matcher: Matcher, message: str, lang: str = "ar") -> dict:
             results.append(build_result(best[1], claimed_kind(message), best[2], lang))
 
     out = {"extractor": extractor, "results": results, "lang": lang}
+    kind = request_kind(message)
+    if kind:
+        # A question, not a quote: a "not found" for the question's own words would only confuse.
+        out["results"] = results = [r for r in results if r["verdict"] != "not_found" or extracted]
+        out["request"] = kind
+        out["note"] = TEXT[lang][kind]
+        if kind == "evidence":
+            out["topic"] = request_topic(message)
     if not results:
-        out["message"] = TEXT[lang]["empty"]
+        out["message"] = TEXT[lang][kind] if kind else TEXT[lang]["empty"]
     return out

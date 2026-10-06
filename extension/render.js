@@ -21,6 +21,7 @@
       close: "إغلاق", result: "نتيجة تبيّن", name: "تبيّن",
       placeholder: "الصق آية أو حديثًا (بالعربية أو الإنجليزية)، أو حدّد نصًا في الصفحة قبل فتح الإضافة",
       check: "تحقّق", noFatwa: "لا يُصدر فتاوى.", settings: "الإعدادات",
+      aiLabel: "✦ شرح كتبه الذكاء الاصطناعي من النتيجة، والنص من المصدر.",
     },
     en: {
       dir: "ltr",
@@ -37,6 +38,7 @@
       close: "Close", result: "Tabayyan result", name: "Tabayyan",
       placeholder: "Paste a verse or hadith (Arabic or English), or select text on the page before opening",
       check: "Check", noFatwa: "Does not issue religious rulings.", settings: "Settings",
+      aiLabel: "✦ Explanation written by AI from the result; the text is quoted from the source.",
     },
   };
   const str = (lang) => STR[lang === "en" ? "en" : "ar"];
@@ -74,6 +76,7 @@
     let html = `<div class="t-res tone-${tone}" dir="${t.dir}">
       <div class="t-head"><strong>${esc(title)}</strong>${m ? `<span>${esc(m.ref)}${m.translator ? ` · ${esc(m.translator)}` : ""}</span>` : ""}</div>`;
     if (r.explanation) html += `<p class="t-expl">${esc(r.explanation)}</p>`;
+    if (r.explanation && r.explanation_source === "claude") html += `<p class="t-ai">${esc(t.aiLabel)}</p>`;
     for (const w of r.warnings) html += `<p class="t-warn">${esc(w)}</p>`;
     if (m) {
       const d = en ? "ltr" : "rtl";
@@ -103,16 +106,19 @@
     .t-src{margin:0;font-family:"Amiri","Traditional Arabic","Noto Naskh Arabic",serif;font-size:20px;line-height:2}
     .t-src.en{font-family:Georgia,serif;font-size:16px;line-height:1.7}
     .t-src .ctx{color:#9aa6b8}.t-src .fix{background:linear-gradient(transparent 55%,rgba(48,208,200,.45) 55%);font-weight:700}
-    .t-grades{font-size:13px;color:#5d6b82;margin:6px 0}.g-ok{color:#16875b}.g-bad{color:#c23b3b}.t-link{font-size:13px;color:#193565}`;
+    .t-grades{font-size:13px;color:#5d6b82;margin:6px 0}.g-ok{color:#16875b}.g-bad{color:#c23b3b}.t-link{font-size:13px;color:#193565}
+    .t-ai{font-size:11.5px;color:#5d6b82;margin:4px 0 6px}`;
 
   function renderAll(data) {
     const t = str(data.lang);
     const head = data.transcript
       ? `<p class="t-label" dir="${t.dir}">${t.fromImage}</p><p class="t-quote" dir="auto">${esc(data.transcript)}</p>` : "";
+    const note = data.note ? `<p class="t-warn" dir="${t.dir}" style="--bg:#eef3fb">${esc(data.note)}</p>` : "";
     if (!data.results.length) {
-      return head + `<p class="t-warn" dir="${t.dir}" style="--bg:#fcebeb">${esc(data.message || "")}</p>`;
+      const bg = data.request ? "#eef3fb" : "#fcebeb";
+      return head + `<p class="t-warn" dir="${t.dir}" style="--bg:${bg}">${esc(data.message || "")}</p>`;
     }
-    return head + data.results.map(render).join("");
+    return head + note + data.results.map(render).join("");
   }
 
   globalThis.TabayyanRender = { render, renderAll, CSS, esc, str };

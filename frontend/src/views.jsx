@@ -87,6 +87,15 @@ export const V = {
     sources: "القرآن الكريم (مشروع تنزيل) وأربع ترجمات لمعانيه، وصحيح البخاري ومسلم والسنن الأربع وموطأ مالك والأربعون النووية والأحاديث القدسية، بدرجات العلماء كما وردت في بيانات Sunnah.com.",
     limitsTitle: "حدود الأداة",
     limits: "«لم نجده» يعني أنه ليس في هذه الكتب، ولا يعني بالضرورة أنه مكذوب. ودرجات الأحاديث معروضة كما حكم بها العلماء، دون ترجيح منا.",
+    noFatwa: "تبيّن أداة آلية مدعومة بالذكاء الاصطناعي، وليس عالمًا ولا مفتيًا. لا يجيب عن الأسئلة الشخصية في الأحكام، ولا يؤلّف أدلة: إن لم يجد نصًا في المصادر قال ذلك.",
+    privacyTitle: "الخصوصية",
+    privacy: [
+      "لا حسابات ولا تسجيل دخول، ولا نطلب اسمك أو بريدك.",
+      "النص أو الصورة التي ترسلها يُعالج على خادم تبيّن ويُرسل إلى Claude من Anthropic لاستخراج النص وكتابة الشرح، ولا نحفظه في أي قاعدة بيانات.",
+      "سجل تحققاتك ولغتك محفوظان في جهازك فقط (في المتصفح)، وتستطيع مسح السجل من صفحة «السجل».",
+      "نصوص الأحاديث غير الموجودة في الكتب التسعة تُرسل إلى الدرر السنية لجلب أحكام العلماء عليها.",
+      "لا نستخدم ما ترسله لاستنتاج شيء عنك، ولا نعرض إعلانات.",
+    ],
     code: "الكود والتوثيق على GitHub",
   },
   en: {
@@ -153,6 +162,15 @@ export const V = {
     sources: "The Quran (Tanzil) and four English translations of its meaning; Sahih al-Bukhari, Sahih Muslim, the four Sunan, Muwatta Malik, Nawawi's Forty and the Forty Qudsi, with scholars' gradings as given in the Sunnah.com data.",
     limitsTitle: "Limits",
     limits: "\"Not found\" means not in these books; it does not by itself mean fabricated. Gradings are shown as the scholars gave them, without our own judgment.",
+    noFatwa: "Tabayyan is an automated, AI-assisted tool, not a scholar or a mufti. It does not answer personal questions about rulings and does not compose evidence: when it finds no text in the sources, it says so.",
+    privacyTitle: "Privacy",
+    privacy: [
+      "No accounts or sign-in, and we never ask for your name or email.",
+      "The text or image you send is processed on Tabayyan's server and sent to Claude by Anthropic to find the quote and write the explanation. We do not store it in any database.",
+      "Your check history and language are stored only on your device (in the browser), and you can clear the history from the History page.",
+      "Hadith texts not found in the nine collections are sent to Dorar al-Saniyyah to fetch scholars' rulings on them.",
+      "We do not use what you send to infer anything about you, and there are no ads.",
+    ],
     code: "Code and documentation on GitHub",
   },
 };
@@ -186,9 +204,9 @@ function ViewHead({ title, intro }) {
 
 // ---------- search the sources ----------
 
-export function SearchView({ lang, onCheck }) {
+export function SearchView({ lang, onCheck, seed = "" }) {
   const v = V[lang];
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(seed);
   const [kind, setKind] = useState("");
   const [st, setSt] = useState({ status: "idle" });
 
@@ -203,6 +221,12 @@ export function SearchView({ lang, onCheck }) {
       setSt({ status: "error" });
     }
   }
+
+  // Opened from a "give me a hadith that proves..." request: search its topic right away.
+  useEffect(() => {
+    if (seed) run(seed, kind);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
 
   return (
     <section className="view">
@@ -399,6 +423,11 @@ export function AboutView({ lang }) {
       <p>{v.sources}</p>
       <h2>{v.limitsTitle}</h2>
       <p>{v.limits}</p>
+      <p>{v.noFatwa}</p>
+      <h2>{v.privacyTitle}</h2>
+      <ul className="privacy">
+        {v.privacy.map((p) => <li key={p}>{p}</li>)}
+      </ul>
       <p><a href={REPO} target="_blank" rel="noreferrer">{v.code}</a></p>
     </section>
   );

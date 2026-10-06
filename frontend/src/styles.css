@@ -219,6 +219,31 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 .ref { margin: 2px 0 0; font-weight: 500; }
 
 .explanation { margin: 16px 0 0; }
+.ai-label {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted, #6b7280);
+}
+.ai-label::before { content: "✦ "; }
+
+.notice {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--scope-bg);
+  color: var(--navy);
+}
+.notice p { margin: 0; }
+.notice-btn {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
 
 .warnings {
   list-style: none;

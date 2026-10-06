@@ -42,6 +42,8 @@ const T = {
     open: (q) => `افتح في ${q ? "Quran.com" : "Sunnah.com"}`,
     grading: "درجة الحديث",
     sahihNote: (s) => `من أحاديث ${s}، وأحاديثه صحيحة عند أهل العلم.`,
+    aiLabel: "شرح كتبه الذكاء الاصطناعي من نتيجة البحث. النص والدرجة أدناه منقولان من المصدر.",
+    toSearch: "ابحث في المصادر",
     alsoIn: "ورد أيضًا في",
     englishMeaning: (q) => (q ? "المعنى بالإنجليزية" : "الترجمة الإنجليزية"),
     foot1: "تبيّن لا يُصدر فتاوى. لما يتجاوز التحقق من وجود النص ودرجته، ارجع إلى أهل العلم.",
@@ -91,6 +93,8 @@ const T = {
     open: (q) => `Open in ${q ? "Quran.com" : "Sunnah.com"}`,
     grading: "Hadith grading",
     sahihNote: (s) => `From ${s}, whose hadiths scholars accept as authentic.`,
+    aiLabel: "Explanation written by AI from the search result. The text and grading below are quoted from the source.",
+    toSearch: "Search the sources",
     alsoIn: "Also found in",
     englishMeaning: (q) => (q ? "English meaning (Saheeh International)" : "English translation"),
     foot1: "Tabayyan does not issue religious rulings. For anything beyond whether a text exists and how it was graded, ask a scholar.",
@@ -192,6 +196,7 @@ function Result({ r, t, lang, aiOn }) {
       </header>
 
       {r.explanation && <p className="explanation">{r.explanation}</p>}
+      {r.explanation && r.explanation_source === "claude" && <p className="ai-label">{t.aiLabel}</p>}
 
       {r.warnings.length > 0 && (
         <ul className="warnings">
@@ -276,6 +281,7 @@ function viewFromHash() {
 export default function App() {
   const [lang, setLang] = useState(initialLang);
   const [view, setView] = useState(viewFromHash);
+  const [searchSeed, setSearchSeed] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const [text, setText] = useState("");
   const [state, setState] = useState({ status: "idle" });
@@ -324,6 +330,7 @@ export default function App() {
 
   function go(id) {
     setMoreOpen(false);
+    setSearchSeed("");
     if (window.location.hash !== `#/${id}`) window.location.hash = `/${id}`;
     setView(id);
     window.scrollTo({ top: 0 });
@@ -493,15 +500,23 @@ export default function App() {
             {state.status === "done" && state.fromImage && state.data.transcript && (
               <p className="transcript-note">{x.readFrom}</p>
             )}
+            {state.status === "done" && state.data.request && (
+              <div className="notice" role="status">
+                <p>{state.data.note}</p>
+                {state.data.request === "evidence" && (
+                  <button type="button" className="notice-btn" onClick={() => { go("search"); setSearchSeed(state.data.topic || ""); }}>{t.toSearch}</button>
+                )}
+              </div>
+            )}
             {state.status === "done" && state.data.results.map((r, i) => <Result key={i} r={r} t={t} lang={lang} aiOn={aiOn} />)}
-            {state.status === "done" && state.data.results.length === 0 && (
+            {state.status === "done" && state.data.results.length === 0 && !state.data.request && (
               <p className="error" role="alert">{state.data.message}</p>
             )}
             {state.status === "done" && state.data.results.length > 0 && <p className="scope">{state.data.results[0].scope}</p>}
             {state.status === "idle" && <p className="idle-note">{t.how[2]} {t.how[1]}</p>}
           </section>
         )}
-        {view === "search" && <SearchView lang={lang} onCheck={checkFrom} />}
+        {view === "search" && <SearchView lang={lang} onCheck={checkFrom} seed={searchSeed} />}
         {view === "myths" && <MythsView lang={lang} onCheck={checkFrom} />}
         {view === "learn" && (
           <section className="view">
