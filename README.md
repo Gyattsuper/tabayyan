@@ -41,6 +41,8 @@ partial match in English may just be a different translation, and the result say
   to see the check.
 - **Share as image:** any result can be saved or shared as a square card for WhatsApp status or social media.
 - **Your history:** recent checks, kept only on your device.
+- **Questions are not quotes:** a request for a fatwa is referred to scholars, and "give me a hadith that
+  proves X" gets a search of the sources for X, never a composed answer. AI-written explanations are labeled.
 
 ## How it works
 
@@ -62,7 +64,7 @@ message ──► extract quote ──► search ──► align ──► verdi
 - `frontend/`: React web app
 - `extension/`: Chrome extension (right-click "تحقّق مع تبيّن", or the toolbar popup), Arabic or English
 
-Sources and licenses: `SOURCES.md`. Test plan and evaluation: `TESTING.md`. What was done on which day: `DEVELOPMENT.md`.
+Sources and licenses: `SOURCES.md`. Test plan and evaluation: `TESTING.md`. What was done on which day: `DEVELOPMENT.md`. How the app meets the challenge's reference framework: `FRAMEWORK.md`.
 
 ## Evaluation
 
